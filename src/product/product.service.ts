@@ -76,71 +76,75 @@ export class ProductService {
         const product = await this.productModel.findById(productId);
         if (!product) throw new NotFoundException('Product not found');
     
+        // Prepare the update data object
+        const updateData: any = {};
+    
+        if (name) updateData.name = name;
+        if (description) updateData.description = description;
+        if (price) updateData.price = price;
+        if (categoryId) updateData.categoryId = categoryId;
+        if (quantity) updateData.quantity = quantity;
+        if (brand) updateData.brand = brand;
+    
         // Validate images
         let invalidFileType = false;
         const isMultipleImages = Array.isArray(images);
-    
+        
         if (isMultipleImages && images.length > 5) {
             throw new UnprocessableEntityException('Maximum 5 images are allowed');
         }
     
         if (isMultipleImages) {
             for (let img of images) {
-                if (!img.mimetype?.startsWith('image')) {
+                if (img && !img.mimetype?.startsWith('image')) {
                     invalidFileType = true;
                     break;
                 }
             }
         } else {
-            if (!images.mimetype?.startsWith('image')) {
+            if (images && !images.mimetype?.startsWith('image')) {
                 invalidFileType = true;
             }
             // If only one image is provided, convert it to an array for uniform processing
-            images = [images];
+            images = images ? [images] : [];
         }
-    
+        
         if (invalidFileType) throw new UnprocessableEntityException('Only images are allowed!');
-    
+        
         // Delete old images from Cloudinary if new images are provided
-        if (product.images && product.images.length > 0) {
+        if (images && images.length > 0) {
             for (let img of product.images) {
                 await cloudUploader.destroy(img.id);
             }
+    
+            // Upload new images to Cloudinary
+            const uploadedImages = [];
+            for (let img of images) {
+                const { secure_url: url, public_id: id } = await cloudUploader.upload(
+                    img.filepath,
+                    {
+                        width: 500,
+                        height: 500,
+                        crop: 'thumb',
+                        gravity: 'face',
+                    }
+                );
+                uploadedImages.push({ url, id });
+            }
+            updateData.images = uploadedImages;
+            updateData.thumbnail = uploadedImages[0]?.url; // Set the first image as the thumbnail
         }
     
-        // Upload new images to Cloudinary
-        const uploadedImages = [];
-        for (let img of images) {
-            const { secure_url: url, public_id: id } = await cloudUploader.upload(
-                img.filepath,
-                {
-                    width: 500,
-                    height: 500,
-                    crop: 'thumb',
-                    gravity: 'face',
-                }
-            );
-            uploadedImages.push({ url, id });
-        }
-    
-        // Update the product's details, including the new images and thumbnail
+        // Update the product's details
         const updatedProduct = await this.productModel.findByIdAndUpdate(
             productId,
-            {
-                name,
-                price,
-                categoryId,
-                description,
-                quantity,
-                brand,
-                images: uploadedImages,
-                thumbnail: uploadedImages[0].url, // Set the first image as the thumbnail
-            },
+            updateData,
             { new: true }
         );
     
-        return { result: updatedProduct };
+        return updatedProduct;
     }
+    
 
     async getAllProducts(){
         const products = await this.productModel.find().populate('categoryId')
@@ -179,6 +183,15 @@ export class ProductService {
         }
     }
     
-    
+//     // Find a seller by their MongoDB _id
+// const seller = await SellerModel.findById(sellerId);
+
+// // Reference a seller in another schema
+// const product = new Product({
+//   name: 'Product Name',
+//   seller: seller._id, // Reference to the seller
+//   // other fields
+// });
+
 
 }

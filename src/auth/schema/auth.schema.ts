@@ -6,7 +6,7 @@ export class User {
   @Prop({type: String, required: true, unique: true})
   email: string;
 
-  @Prop({type: String, required: true})
+  @Prop({type: String})
   password: string;
 
   @Prop({type: String})
@@ -14,6 +14,21 @@ export class User {
 
   @Prop({type: Number})
   phone: number;
+
+  @Prop({type: String})
+  address: string;
+
+  @Prop({
+    type: {
+      url: { type: String, required: true },
+      id: { type: String, required: true }
+    },
+  
+  })
+  avatar: {
+    url: string;
+    id: string;
+}
 
   @Prop({type: Boolean, default: false})
   isVerified: boolean;

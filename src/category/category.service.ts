@@ -44,10 +44,7 @@ export class CategoryService {
       if (!thumbnail.mimetype?.startsWith('image')) {
         throw new UnprocessableEntityException('Invalid file type, only images are allowed');
       }
-          
-        if (!thumbnail.mimetype?.startsWith('image')) {
-            throw new UnprocessableEntityException('Invalid file type, only images are allowed')
-        }
+        
         
     const { secure_url, public_id } = await uploadImage(thumbnail.filepath);
     const imageUrl = { url: secure_url, id: public_id };
@@ -112,9 +109,11 @@ export class CategoryService {
         const category = await this.categoryModel.findById(catId).exec();
         if (!category) throw new NotFoundException('Category not found');
     
-        if (category.thumbnail?.id) {
-          // Remove existing thumbnail file from cloud storage
-          await cloudUploader.destroy(category.thumbnail.id);
+        if(files.thumbnail) {
+          if (category.thumbnail?.id) {
+            // Remove existing thumbnail file from cloud storage
+            await cloudUploader.destroy(category.thumbnail.id);
+          }
         }
     
         // Upload new image if thumbnail exists

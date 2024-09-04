@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException, UnprocessableEntityException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from './schema/auth.schema';
@@ -6,6 +6,7 @@ import * as bcrypt from 'bcrypt';
 import { generateToken } from 'src/utils/token';
 import { EmailVerificationToken } from './schema/emailVerification.shema';
 import { JwtService } from '@nestjs/jwt';
+import cloudUploader from 'src/cloud';
 
 @Injectable()
 export class AuthService {
@@ -79,4 +80,67 @@ export class AuthService {
         const token = this.jwtService.sign(payload, {secret: process.env.JWT_SECRET, expiresIn: '1h'})
         return {token, data:{email: user.email, id: user._id, role: user.role}}
     }
+
+    async register(body: any){
+        const {name, phone, userId} = body;
+        const emailExist = await this.userModel.findById({ userId });
+        if (emailExist) {
+          throw new UnauthorizedException('Email already exists');
+        }
+
+        if(!emailExist.isVerified) throw new UnauthorizedException('Please verify your email first before you can update your profile')
+
+        const newUser = this.userModel.findByIdAndUpdate(userId, {name, phone}, {new: true});
+        return newUser;
+    }
+
+    async updateProfile(body: any, fields: any, files: any, userId: string) {
+        let { avatar } = files;
+        const { name, address, phone } = fields;
+    
+        if (avatar) {
+            if (Array.isArray(avatar)) {
+                if (avatar.length > 1) {
+                    throw new UnprocessableEntityException('Multiple files are not allowed!');
+                }
+                avatar = avatar[0];
+            }
+    
+            if (!avatar.mimetype?.startsWith('image')) {
+                throw new UnprocessableEntityException('Invalid image file!');
+            }
+        }
+    
+        const user = await this.userModel.findById(userId);
+        if (!user) throw new UnauthorizedException('Access denied!');
+    
+        if (avatar && user.avatar?.id) {
+            // Remove existing avatar file
+            await cloudUploader.destroy(user.avatar.id);
+        }
+    
+        let updatedAvatar = user.avatar;
+        if (avatar) {
+            // Upload new avatar to Cloudinary
+            const { secure_url: url, public_id: id } = await cloudUploader.upload(
+                avatar.filepath,
+                {
+                    width: 300,
+                    height: 300,
+                    crop: 'thumb',
+                    gravity: 'face'
+                }
+            );
+            updatedAvatar = { id, url };
+        }
+    
+        const updateUser = await this.userModel.findByIdAndUpdate(
+            userId,
+            { name, address, phone, avatar: updatedAvatar },
+            { new: true }
+        );
+    
+        return updateUser;
+    }
+    
 }

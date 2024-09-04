@@ -7,6 +7,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { CategoryModule } from './category/category.module';
 import { ProductModule } from './product/product.module';
 import { UploadMiddleware } from './middleware/fileParser';
+import { GoogleModule } from './google/google.module';
 
 @Module({
   imports: [
@@ -18,7 +19,8 @@ import { UploadMiddleware } from './middleware/fileParser';
         MongooseModule.forRoot(process.env.MONGO_URI),
     AuthModule,
     CategoryModule,
-    ProductModule
+    ProductModule,
+    GoogleModule,
   ],
   controllers: [AppController],
   providers: [AppService],
@@ -31,6 +33,8 @@ export class AppModule implements NestModule {
         { path: 'category/create', method: RequestMethod.POST },
         { path: 'category/:id', method: RequestMethod.PATCH },
         { path: 'product/create', method: RequestMethod.POST },
-        { path: 'product/update/:id', method: RequestMethod.PATCH },);
+        { path: 'product/update/:id', method: RequestMethod.PATCH },
+        { path: 'auth/update-profile', method: RequestMethod.PATCH },
+      );
   }
 }
