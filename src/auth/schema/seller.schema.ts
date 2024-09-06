@@ -16,6 +16,12 @@ export class Seller extends User {
   @Prop({type: String})
   shopAddress: string;
 
+  @Prop({type: String})
+  shopDescription: string;
+
+  @Prop({type: String})
+  country: string;
+
   // Add any other seller-specific fields here
 }
 

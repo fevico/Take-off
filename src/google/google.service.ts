@@ -19,7 +19,7 @@ export class GoogleService {
             let dbUser = await this.userModel.findOne({ email: user.email }).exec();
 
             if(!dbUser){
-                throw new UnauthorizedException('User not found');
+                throw new UnauthorizedException('Please signup this user!');
             }
 
             // Generate a JWT token for the user

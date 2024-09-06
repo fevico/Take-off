@@ -8,6 +8,8 @@ import { CategoryModule } from './category/category.module';
 import { ProductModule } from './product/product.module';
 import { UploadMiddleware } from './middleware/fileParser';
 import { GoogleModule } from './google/google.module';
+import { SellerModule } from './seller/seller.module';
+import { OrderModule } from './order/order.module';
 
 @Module({
   imports: [
@@ -21,6 +23,8 @@ import { GoogleModule } from './google/google.module';
     CategoryModule,
     ProductModule,
     GoogleModule,
+    SellerModule,
+    OrderModule,
   ],
   controllers: [AppController],
   providers: [AppService],

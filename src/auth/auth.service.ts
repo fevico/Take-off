@@ -7,6 +7,7 @@ import { generateToken } from 'src/utils/token';
 import { EmailVerificationToken } from './schema/emailVerification.shema';
 import { JwtService } from '@nestjs/jwt';
 import cloudUploader from 'src/cloud';
+import { LoginDto, RegisterUserDto, ResendTokenDto, SignUpDto, VerifyTokenDto } from './dto/auth.dto';
 
 @Injectable()
 export class AuthService {
@@ -16,7 +17,7 @@ export class AuthService {
     private readonly jwtService: JwtService
 ){}
 
-    async createUser(body: any){
+    async createUser(body: SignUpDto){
         const {email, password} = body;
         const emailExist = await this.userModel.findOne({ email });
         if (emailExist) {
@@ -38,7 +39,7 @@ export class AuthService {
          return {message: 'User created successfully!', token: token, id: newUser._id};
     }
 
-    async resendToken(body: any){
+    async resendToken(body: ResendTokenDto){
         const {email} = body
         const user = await this.userModel.findOne({email})
         if(!user) throw new UnauthorizedException('Invalid request!,no user found with this credentials')
@@ -51,11 +52,11 @@ export class AuthService {
         return {message: 'Email sent successfully!', token, userId: user._id}
     }
 
-    async verifyEmail(body: any){
-        const {token, id} = body
-        const user = await this.userModel.findById(id)
+    async verifyEmail(body: VerifyTokenDto){
+        const {token, userId} = body
+        const user = await this.userModel.findById(userId)
         if(!user) throw new UnauthorizedException('Invalid user')
-        const emailVerificationToken = await this.emailVerificationTokenModel.findOne({owner:id})
+        const emailVerificationToken = await this.emailVerificationTokenModel.findOne({owner:userId})
         if(!emailVerificationToken){
             throw new UnauthorizedException('Invalid token')
         }
@@ -63,11 +64,11 @@ export class AuthService {
         if(!isTokenMatch) throw new UnauthorizedException('Invalid token')
         user.isVerified = true;
         await user.save()
-        await this.emailVerificationTokenModel.deleteOne({owner:id})
+        await this.emailVerificationTokenModel.deleteOne({owner:userId})
         return {message: 'Email verified successfully!'}
     }
 
-    async login(body: any){
+    async login(body: LoginDto){
         const user = await this.userModel.findOne({email: body.email})
         if(!user){
             throw new NotFoundException('User not found')
@@ -81,7 +82,7 @@ export class AuthService {
         return {token, data:{email: user.email, id: user._id, role: user.role}}
     }
 
-    async register(body: any){
+    async register(body: RegisterUserDto){
         const {name, phone, userId} = body;
         const emailExist = await this.userModel.findById({ userId });
         if (emailExist) {

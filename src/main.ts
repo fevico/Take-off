@@ -2,7 +2,6 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
-import { UploadMiddleware } from './middleware/fileParser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -17,10 +16,10 @@ async function bootstrap() {
   // app.use(new UploadMiddleware().use);
 
   const config = new DocumentBuilder()
-    .setTitle('Black Oak')
-    .setDescription('Black Oak Api Doumentation')
+    .setTitle('Take Off')
+    .setDescription('Api documentation for take off server')
     .setVersion('1.0')
-    .addTag('cats')
+    // .addTag('cats')
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);

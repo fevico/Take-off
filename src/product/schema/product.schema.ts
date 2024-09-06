@@ -14,8 +14,8 @@ export class Product {
   @Prop({type: MongooseSchema.Types.ObjectId, ref: 'Category', required: true,})
   categoryId: MongooseSchema.Types.ObjectId;
 
-//   @Prop({type: MongooseSchema.Types.ObjectId, ref: 'User', required: true})
-//   sellerId: MongooseSchema.Types.ObjectId;
+  @Prop({enum:['active', 'inactive', 'outOfStock'], required: true,})
+  status: string;
 
   @Prop({type: Number, required: true,})
   price: number;
