@@ -12,74 +12,48 @@ export class AuthController {
 
     @Post('create')
     @ApiOperation({
-        summary: 'Create a new user record',
-        description: 'This endpoint allows you to create a new user with the specified email, password, and role.'
-      })
-      @ApiBody({
-        description: 'Details of the user to create',
+      summary: 'Create a new user record',
+      description: 'This endpoint allows you to create a new user with the specified email and password.'
+    })
+    @ApiResponse({
+      status: 201,
+      description: 'The user record has been successfully created',
+      schema: {
         type: 'object',
-        schema: {
-          type: 'object',
-          properties: {
-            email: {
-              type: 'string',
-              example: 'example@example.com',
-              description: 'User email address',
-            },
-            password: {
-              type: 'string',
-              example: 'password123',
-              description: 'User password',
-            },
-            // role: {
-            //   type: 'string',
-            //   example: 'buyer',
-            //   description: 'User role, e.g., buyer, seller, etc.',
-            // },
-          },
+        properties: {
+          id: { type: 'string', example: '60b6aeb8b4e312c8a8c19d5e' },
+          email: { type: 'string', example: 'example@example.com' },
+          createdAt: { type: 'string', example: '2024-09-05T12:34:56.789Z' },
+          updatedAt: { type: 'string', example: '2024-09-05T12:34:56.789Z' },
         },
-      })
-      @ApiResponse({
-        status: 201, // 201 is more appropriate for successful creation
-        description: 'The user record has been successfully created',
-        schema: {
-          type: 'object',
-          properties: {
-            id: { type: 'string', example: '60b6aeb8b4e312c8a8c19d5e' },
-            email: { type: 'string', example: 'example@example.com' },
-            // role: { type: 'string', example: 'buyer' },
-            createdAt: { type: 'string', example: '2024-09-05T12:34:56.789Z' },
-            updatedAt: { type: 'string', example: '2024-09-05T12:34:56.789Z' },
-          },
+      },
+    })
+    @ApiResponse({
+      status: 400,
+      description: 'Bad Request. Validation error or missing fields.',
+      schema: {
+        type: 'object',
+        properties: {
+          statusCode: { type: 'number', example: 400 },
+          message: { type: 'string', example: 'Validation failed' },
+          error: { type: 'string', example: 'Bad Request' },
         },
-      })
-      @ApiResponse({
-        status: 400,
-        description: 'Bad Request. Validation error or missing fields.',
-        schema: {
-          type: 'object',
-          properties: {
-            statusCode: { type: 'number', example: 400 },
-            message: { type: 'string', example: 'Validation failed' },
-            error: { type: 'string', example: 'Bad Request' },
-          },
+      },
+    })
+    @ApiResponse({
+      status: 403,
+      description: 'Forbidden. User does not have the necessary permissions.',
+      schema: {
+        type: 'object',
+        properties: {
+          statusCode: { type: 'number', example: 403 },
+          message: { type: 'string', example: 'Forbidden' },
+          error: { type: 'string', example: 'Forbidden' },
         },
-      })
-      @ApiResponse({
-        status: 403,
-        description: 'Forbidden. User does not have the necessary permissions.',
-        schema: {
-          type: 'object',
-          properties: {
-            statusCode: { type: 'number', example: 403 },
-            message: { type: 'string', example: 'Forbidden' },
-            error: { type: 'string', example: 'Forbidden' },
-          },
-        },
-      })
-    
-    createUser(@Body() body: SignUpDto){
-        return this.authService.createUser(body)
+      },
+    })
+    createUser(@Body() body: SignUpDto) {
+      return this.authService.createUser(body);
     }
 
     @Post('resend-token')
@@ -87,20 +61,22 @@ export class AuthController {
         summary: 'Resend verification token',
         description: 'This endpoint allows user resend verification token if the token was not received initially.'
       })
-      @ApiBody({
-        description: 'Details of the user to create',
-        type: 'object',
-        schema: {
-          type: 'object',
-          properties: {
-            email: {
-              type: 'string',
-              example: 'example@example.com',
-              description: 'User email address',
-            },
-          },
-        },
-      })
+      // @ApiBody({
+      //   description: 'Details of the user to create',
+      //   type: 'object',
+      //   schema: {
+      //     type: 'object',
+      //     properties: {
+      //       email: {
+      //         type: 'string',
+      //         example: 'example@example.com',
+      //         description: 'User email address',
+      //       },
+      //     },
+      //   },
+      // })
+      @ApiBody({ type: ResendTokenDto }) // Use the DTO here
+ 
       @ApiResponse({
         status: 201, // 201 is more appropriate for successful creation
         description: 'please check your email for the verification token',
@@ -164,6 +140,8 @@ export class AuthController {
           },
         },
       })
+      @ApiBody({ type: VerifyTokenDto }) // Use the DTO here
+
       @ApiResponse({
         status: 200, // 201 is more appropriate for successful creation
         description: 'User verified successfully',
@@ -227,6 +205,8 @@ export class AuthController {
           },
         },
       })
+      @ApiBody({ type: LoginDto }) // Use the DTO here
+
       @ApiResponse({
         status: 200, // 201 is more appropriate for successful creation
         description: 'User verified successfully',
@@ -296,6 +276,8 @@ export class AuthController {
           },
         },
       })
+      @ApiBody({ type: RegisterUserDto }) // Use the DTO here
+
       @ApiResponse({
         status: 200, // 201 is more appropriate for successful creation
         description: 'User registration completed successfully',
@@ -409,7 +391,7 @@ export class AuthController {
       })
     @UseGuards(AuthenitcationGuard)
     updateProfile(@Body() body: any, @Req() req: Request){
-        const fields = req.body as Record<string, any>; // Use a more specific type if possible
+        const fields = req.body as Record<string, any>; 
         const files = req['files'] as Record<string, any>;
         const userId = req.user.id
     
