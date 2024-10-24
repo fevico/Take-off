@@ -14,6 +14,10 @@ const uploadImage = (filepath: string): Promise<UploadApiResponse> =>{
      })
  }
 
+ interface PopulatedCategory {
+    name: string
+}
+
 @Injectable()
 export class ProductService {
 
@@ -25,8 +29,8 @@ export class ProductService {
     const {name, description, price, categoryId, quantity, brand, seller} = fields
      const {images} = files
 
-     const newProduct = new this.productModel({name, price, categoryId, description, quantity})
-
+     try {
+        const newProduct = new this.productModel({name, price, categoryId, description, quantity})
  
      let invalidFileType = false
      // if this is the case then we have multiple images
@@ -46,7 +50,7 @@ export class ProductService {
              invalidFileType = true
      }
  }
-     if(invalidFileType) throw new UnprocessableEntityException('Only images are allowd!')
+     if(invalidFileType) throw new UnprocessableEntityException('Only images are allowed!')
         // FILE UPLOAD
      if(isMultipleImages){
          const uploadPromise = images.map(file =>uploadImage(file.filepath))
@@ -65,14 +69,19 @@ export class ProductService {
          }
      }
      await newProduct.save()
-         return newProduct
-    }
+         return {status: true, statusCode: 201, newProduct}
+
+     } catch (error) {
+        throw new UnprocessableEntityException(error.message)
+     }
+}
 
     async updateProduct(fields: any, files: any, productId: string) {
         const { name, description, price, categoryId, quantity, brand } = fields;
         let { images } = files;
-        
-        // Find the product in the database
+
+        try {
+          // Find the product in the database
         const product = await this.productModel.findById(productId);
         if (!product) throw new NotFoundException('Product not found');
     
@@ -142,20 +151,60 @@ export class ProductService {
             { new: true }
         );
     
-        return updatedProduct;
+        return updatedProduct;  
+        } catch (error) {
+            throw new UnprocessableEntityException(error.message)
+        }
+        
     }
     
-
-    async getAllProducts(){
-        const products = await this.productModel.find().populate('categoryId')
-        if(!products) throw new NotFoundException('No products found')
-        return products
-    }
+    async getAllProducts() {
+        const products = await this.productModel
+          .find()
+          .populate<{ categoryId: PopulatedCategory }>({
+            path: 'categoryId',
+            select: 'name', // select only the name field
+          });
+      
+        if (!products || products.length === 0) {
+          throw new NotFoundException('No products found');
+        }
+      
+        // Map through the products array and return the desired structure
+        return products.map((product) => ({
+          id: product._id,
+          name: product.name,
+          description: product.description,
+          price: product.price,
+          quantity: product.quantity,
+          images: product.images,
+          thumbnail: product.thumbnail,
+          categoryName: product.categoryId ? product.categoryId.name : 'No category', // Handle missing categoryId
+        }));
+      }
 
     async getProductById(productId: string){
-        const product = await this.productModel.findById(productId).populate('categoryId')
-        if(!product) throw new NotFoundException('No product found')
-        return product
+        try {
+            const product = await this.productModel.findById(productId).populate<{categoryId: PopulatedCategory}>({path: "categoryId", select: "name"})
+            if(!product) throw new NotFoundException('No product found')
+            return {
+                status: true,
+                message: "Product found",
+                data: {
+                    id: product._id,
+                    name: product.name,
+                    description: product.description,
+                    price: product.price,
+                    quantity: product.quantity,
+                    images: product.images,
+                    thumbnail: product.thumbnail,
+                    categoryName: product.categoryId ? product.categoryId.name : 'No category', // Handle missing categoryId
+                }
+            } 
+        } catch (error) {
+            throw new UnprocessableEntityException(error.message)
+        }
+        
     }
     async deleteProduct(productId: string) {
         const session = await this.productModel.startSession();
@@ -175,11 +224,11 @@ export class ProductService {
             await session.commitTransaction();
             session.endSession();
     
-            return { message: "Deleted successfully!" };
+            return {status: true, statusCode: 201, message: "Deleted successfully!" };
         } catch (error) {
             await session.abortTransaction();
             session.endSession();
-            throw error;
+            throw new UnprocessableEntityException(error.message);
         }
     }
     

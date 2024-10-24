@@ -3,7 +3,7 @@ import { JwtService, TokenExpiredError, JsonWebTokenError } from "@nestjs/jwt";
 import { Observable } from "rxjs";
 
 @Injectable()
-export class AuthenitcationGuard implements CanActivate {
+export class AuthenticationGuard implements CanActivate {
     constructor(private readonly jwtService: JwtService) {}
 
     canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean> {

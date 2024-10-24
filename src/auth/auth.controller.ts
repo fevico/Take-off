@@ -1,6 +1,6 @@
 import { Body, Controller, Patch, Post, Put, Req, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { AuthenitcationGuard } from 'src/guards/Authentication';
+import { AuthenticationGuard } from 'src/guards/Authentication';
 import { Request } from 'express';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { LoginDto, RegisterUserDto, ResendTokenDto, SignUpDto, VerifyTokenDto } from './dto/auth.dto';
@@ -389,7 +389,7 @@ export class AuthController {
           },
         },
       })
-    @UseGuards(AuthenitcationGuard)
+    @UseGuards(AuthenticationGuard)
     updateProfile(@Body() body: any, @Req() req: Request){
         const fields = req.body as Record<string, any>; 
         const files = req['files'] as Record<string, any>;
