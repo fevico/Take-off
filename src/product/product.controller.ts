@@ -1,6 +1,10 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UnprocessableEntityException } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UnprocessableEntityException, UseGuards } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Roles } from 'src/decorator/role.decorator';
+import { AuthenticationGuard } from 'src/guards/Authentication';
+import { AuthorizationGuard } from 'src/guards/Authorization';
+import { Request } from 'express';
 
 @ApiTags('Product')
 @Controller('product')
@@ -8,6 +12,7 @@ export class ProductController {
 
     constructor(private productService: ProductService) {}
 
+    @Roles(['admin', "seller"])
     @Post('create')
     @ApiOperation({ summary: 'Create a new product with file uploads' })
     @ApiBody({
@@ -116,7 +121,9 @@ export class ProductController {
         return this.productService.createProduct(fields, files);
     }
 
+    @Roles(['admin', "seller"])
     @Patch('update/:id')
+    @UseGuards(AuthenticationGuard, AuthorizationGuard)
     @ApiOperation({ summary: 'Update product with file uploads' })
     @ApiParam({ name: 'id', description: 'ID of the category to update', example: 'category-id' })
     @ApiBody({
@@ -197,6 +204,7 @@ export class ProductController {
       })
 
     updateProduct(@Param('id') id: string, @Body() body: any, @Req() req: Request) {
+      const owner = req.user.id
         const fields = req.body as Record<string, any>;
         const files = req['files'] as Record<string, any>;
     
@@ -217,7 +225,7 @@ export class ProductController {
             fields.quantity = fields.quantity[0];
         }
     
-        return this.productService.updateProduct(fields, files, id);
+        return this.productService.updateProduct(fields, files, id, owner);
 
     }
 
@@ -359,7 +367,9 @@ export class ProductController {
         return this.productService.getProductById(id);
     }
 
+    @Roles(["admin", "seller"])
     @Delete(':id')
+    @UseGuards(AuthenticationGuard, AuthorizationGuard)
     @ApiOperation({
         summary: 'Delete a product record',
         description: 'This endpoint allows you to delete a product record.'
@@ -377,8 +387,9 @@ export class ProductController {
     })
     @ApiResponse({ status: 404, description: 'Product not found' })
   
-    deleteProduct(@Param('id') id: string) {
-        return this.productService.deleteProduct(id);
+    deleteProduct(@Param('id') id: string, @Req() req: Request) {
+      const owner = req.user.id;
+        return this.productService.deleteProduct(id, owner);
     }
     
 }

@@ -76,11 +76,13 @@ export class ProductService {
      }
 }
 
-    async updateProduct(fields: any, files: any, productId: string) {
+    async updateProduct(fields: any, files: any, productId: string, owner: string) {
         const { name, description, price, categoryId, quantity, brand } = fields;
         let { images } = files;
 
         try {
+            const productOwner = await this.productModel.findOne({owner});
+            if (!productOwner) throw new UnprocessableEntityException('You are not authorized to update this product');
           // Find the product in the database
         const product = await this.productModel.findById(productId);
         if (!product) throw new NotFoundException('Product not found');
@@ -206,13 +208,13 @@ export class ProductService {
         }
         
     }
-    async deleteProduct(productId: string) {
+    async deleteProduct(productId: string, owner: string) {
         const session = await this.productModel.startSession();
         session.startTransaction();
         
         try {
-            const product = await this.productModel.findById(productId);
-            if (!product) throw new NotFoundException('No product found');
+            const product = await this.productModel.findOne({_id: productId, owner: owner});
+            if (!product) throw new UnprocessableEntityException('Product not found / You are not authorized to delete this product!');
     
             if (product.images && product.images.length > 0) {
                 for (let img of product.images) {

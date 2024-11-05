@@ -10,6 +10,7 @@ import { UploadMiddleware } from './middleware/fileParser';
 import { GoogleModule } from './google/google.module';
 import { SellerModule } from './seller/seller.module';
 import { OrderModule } from './order/order.module';
+import { PaymentModule } from './payment/payment.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { OrderModule } from './order/order.module';
     GoogleModule,
     SellerModule,
     OrderModule,
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [AppService],

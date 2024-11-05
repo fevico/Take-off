@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Req } from '@nestjs/common';
 import { CategoryService } from './category.service';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Roles } from 'src/decorator/role.decorator';
 
 
 @ApiTags('Category')
@@ -9,6 +10,7 @@ export class CategoryController {
     constructor(private readonly categoryService: CategoryService) {}
 
     @ApiBearerAuth()
+    @Roles(['admin'])
     @Post('create')
     @ApiOperation({
         summary: 'Create a new category record',
@@ -172,6 +174,7 @@ export class CategoryController {
         return this.categoryService.getCategoryById(id)
     }
 
+    @Roles(['admin'])
     @Delete(':id')
     @ApiOperation({
         summary: 'Delete a category record',
@@ -194,6 +197,7 @@ export class CategoryController {
         return this.categoryService.deleteCategory(id)
     }
 
+    @Roles(['admin'])
     @Patch(':id')
     @ApiOperation({
         summary: 'Update a category record',

@@ -31,7 +31,7 @@ export class AuthService {
 
   async createUser(body: SignUpDto) {
     try {
-        const { email, password } = body;
+        const { email, password, role } = body;
         const emailExist = await this.userModel.findOne({ email });
         if (emailExist) {
           throw new UnauthorizedException('Email already exists');
@@ -118,7 +118,7 @@ export class AuthService {
     if (!isPasswordMatch) {
       throw new UnauthorizedException('Invalid email/password');
     }
-    const payload = { email: user.email, id: user._id };
+    const payload = { email: user.email, id: user._id, name: user.name, address: user.address, role: user.role};
     const token = this.jwtService.sign(payload, {
       secret: process.env.JWT_SECRET,
       expiresIn: '1d',
