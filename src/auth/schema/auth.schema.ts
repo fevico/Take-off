@@ -33,6 +33,9 @@ export class User {
   @Prop({type: Boolean, default: false})
   isVerified: boolean;
 
+  @Prop({type: Boolean, default: false})
+  isApproved: boolean;
+
   @Prop({ required: true, enum: ['admin', 'buyer', 'seller'], default: 'buyer' })
   role: string;
 

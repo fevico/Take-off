@@ -102,8 +102,12 @@ export class AuthService {
       emailVerificationToken.token,
     );
     if (!isTokenMatch) throw new UnauthorizedException('Invalid token');
-    user.isVerified = true;
-    await user.save();
+    if(user.isVerified === true && user.isApproved === false){
+      return { message: 'Email verified to be a seller!', status: 200 };
+    }else{
+      user.isVerified = true;
+      await user.save();  
+    }
     await this.emailVerificationTokenModel.deleteOne({ owner: userId });
     return { message: 'Email verified successfully!' };
   }
