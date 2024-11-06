@@ -45,7 +45,7 @@ export class SellerService {
     // Assuming sendEmailVerification is a function to send email notifications
     // await sendEmailVerification(user.email, token);
 
-    return { message: 'Verification token sent to your email', status: 200 };
+    return { message: 'Verification token sent to your email', status: 200, token, userId:user._id };
 }
 
 }
