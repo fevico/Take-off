@@ -8,16 +8,15 @@ import { Model } from 'mongoose';
 import { User } from 'src/auth/schema/auth.schema';
 import { Seller } from 'src/seller/schema/seller.schema';
 import { generateToken } from 'src/utils/token';
-import { SellerVerificationToken } from './schema/sellerToken';
 import { BecomeSellerDto } from './dto/seller.dto';
+import { EmailVerificationToken } from 'src/auth/schema/emailVerification.shema';
 
 @Injectable()
 export class SellerService {
   constructor(
     @InjectModel(Seller.name) private readonly sellerModel: Model<Seller>,
     @InjectModel(User.name) private userModel: Model<User>,
-    @InjectModel(SellerVerificationToken.name)
-    private sellerVerificationModel: Model<SellerVerificationToken>,
+    @InjectModel(EmailVerificationToken.name) private sellerVerificationModel: Model<EmailVerificationToken>,
   ) {}
 
   async becomeSeller(body: BecomeSellerDto) {
@@ -36,6 +35,6 @@ export class SellerService {
     // Assuming sendEmailVerification is a function to send email notifications
     // await sendEmailVerification(user.email, token);
 
-    return { message: 'Verification token sent to your email', token, status: 200 };
+    return { message: 'Verification token sent to your email', token, status: 200, userId: user._id };
   }
 }
