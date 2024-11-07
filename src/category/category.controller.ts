@@ -1,7 +1,9 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { CategoryService } from './category.service';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Roles } from 'src/decorator/role.decorator';
+import { AuthenticationGuard } from 'src/guards/Authentication';
+import { AuthorizationGuard } from 'src/guards/Authorization';
 
 
 @ApiTags('Category')
@@ -12,6 +14,7 @@ export class CategoryController {
     @ApiBearerAuth()
     @Roles(['admin'])
     @Post('create')
+    @UseGuards(AuthenticationGuard, AuthorizationGuard)
     @ApiOperation({
         summary: 'Create a new category record',
         description: 'This endpoint allows you to create a new category with the specified name and thumbnail and thumbnail as a file.'
