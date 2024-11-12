@@ -13,9 +13,18 @@ const uploadImage = (filepath: string): Promise<UploadApiResponse> => {
   return cloudUploader.upload(filepath, {
     width: 1280,
     height: 720,
-    crop: 'fill',
+    crop: 'fit', // use 'fit' to maintain aspect ratio
   });
 };
+
+// const uploadImage = (filepath: string): Promise<UploadApiResponse> => {
+//   return cloudUploader.upload(filepath, {
+//     width: 1280,
+//     height: 720,
+//     crop: 'limit', // limits size without cropping or stretching
+//   });
+// };
+
 
 @Injectable()
 export class CategoryService {
