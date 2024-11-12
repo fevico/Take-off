@@ -11,8 +11,8 @@ import cloudUploader from 'src/cloud';
 
 const uploadImage = (filepath: string): Promise<UploadApiResponse> => {
   return cloudUploader.upload(filepath, {
-    width: 1280,
-    height: 720,
+    // width: 1280,
+    // height: 720,
     crop: 'fit', // use 'fit' to maintain aspect ratio
   });
 };
