@@ -14,10 +14,10 @@ export class Product {
   @Prop({type: MongooseSchema.Types.ObjectId, ref: 'Category', required: true,})
   categoryId: MongooseSchema.Types.ObjectId;
 
-  @Prop({type: MongooseSchema.Types.ObjectId, ref: 'User', required: true,})
+  @Prop({type: MongooseSchema.Types.ObjectId, ref: 'User'})
   owner: MongooseSchema.Types.ObjectId;
 
-  @Prop({enum:['active', 'inactive', 'outOfStock'], required: true,})
+  @Prop({enum:['active', 'inactive', 'outOfStock'], default: 'active'})
   status: string;
 
   @Prop({type: Number, required: true,})
