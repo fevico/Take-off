@@ -1,4 +1,5 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { Schema as MongooseSchema, Types } from 'mongoose';
 
 @Schema()
 export class User {
@@ -35,6 +36,11 @@ export class User {
 
   @Prop({type: Boolean, default: false})
   isApproved: boolean;
+
+  @Prop({
+    type: [{ type: MongooseSchema.Types.ObjectId, ref: 'Product' }],
+  })
+  products: Types.ObjectId[]; 
 
   @Prop({ required: true, enum: ['admin', 'buyer', 'seller'], default: 'buyer' })
   role: string;

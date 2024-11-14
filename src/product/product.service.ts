@@ -244,5 +244,11 @@ export class ProductService {
 //   // other fields
 // });
 
-
-}
+    // Assuming you’re using MongoDB and Mongoose
+    async getFeaturedProducts(){
+            const featuredProducts = await this.productModel.find()
+              .sort({ createdAt: -1 })
+              .limit(10); 
+            return featuredProducts;
+          };
+    }

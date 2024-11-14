@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Schema as MongooseSchema } from 'mongoose';
 
 
-@Schema()
+@Schema({timestamps: true})
 export class Product {
     
   @Prop({type: String, required: true,})
@@ -25,6 +25,9 @@ export class Product {
 
   @Prop({type: Number, required: true,})
   quantity: number;
+
+  @Prop({type: Number, required: true,})
+  totalSale: number;
 
   @Prop({
     type:[{

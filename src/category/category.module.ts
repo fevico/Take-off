@@ -9,7 +9,7 @@ import { JwtModule } from '@nestjs/jwt';
   imports:[MongooseModule.forFeature([{name: Category.name, schema:categorySchema}]),
   JwtModule.register({
     secret: process.env.JWT_SECRET, // Ensure this environment variable is set
-    signOptions: { expiresIn: '1d' },
+    signOptions: { expiresIn: '5d' },
   }),
 ],
   controllers: [CategoryController],

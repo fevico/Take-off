@@ -392,4 +392,58 @@ export class ProductController {
         return this.productService.deleteProduct(id, owner);
     }
     
-}
+    @Get('featured')
+    @ApiOperation({
+        summary: 'Get featured products',
+        description: 'This endpoint allows you to get featured products.'
+      })
+      @ApiResponse({
+        status: 200,
+        description: 'Featured products retrieved successfully',
+        schema: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+                id: { type: 'string', example: 'product123' },
+                name: { type: 'string', example: 'Product Name' },
+                description: { type: 'string', example: 'This is a product description' },
+                price: { type: 'number', example: 49.99 },
+                categoryName: { type: 'string', example: 'Electronics' },
+                images: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'string', example: 'img123' },
+                      url: { type: 'string', example: 'http://res.cloudinary.com/image.jpg' },
+                    },
+                  },
+                },
+                thumbnail: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string', example: 'thumb123' },
+                    url: { type: 'string', example: 'http://res.cloudinary.com/thumbnail.jpg' },
+                  },
+                },
+            },
+          },
+        },
+      })
+      @ApiResponse({
+        status: 400,
+        description: 'Bad Request. Validation error or missing fields.',
+        schema: {
+          type: 'object',
+          properties: {
+            statusCode: { type: 'number', example: 400 },
+            message: { type: 'string', example: 'Validation failed' },
+            error: { type: 'string', example: 'Bad Request' },
+          },
+        },
+      })
+      getFeaturedProducts() {
+      return this.productService.getFeaturedProducts();
+    }
+    }
