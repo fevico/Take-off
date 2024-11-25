@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, Req, Res } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { CreateOrderDto } from './dto/order.dto';
 
@@ -6,8 +6,13 @@ import { CreateOrderDto } from './dto/order.dto';
 export class OrderController {
     constructor(private readonly orderService: OrderService) {}
 
-    // @Post('create')
-    // async createOrder(@Body() createOrderDto: CreateOrderDto) {
-    //     return this.orderService.createOrder(createOrderDto);
-    // }
+    @Post('create')
+    async createPayment(@Body() body: any, @Res() res: any) {
+        return this.orderService.createPayment(body, res);
+    }
+    
+    @Post('webhook')
+    async webhook(@Body() body: any, @Res() res: any, @Req() req: Request) {
+        return this.orderService.webhook(body, res, req);
+    }
 }

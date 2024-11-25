@@ -26,7 +26,7 @@ export class Product {
   @Prop({type: Number, required: true,})
   quantity: number;
 
-  @Prop({type: Number, required: true,})
+  @Prop({type: Number})
   totalSale: number;
 
   @Prop({

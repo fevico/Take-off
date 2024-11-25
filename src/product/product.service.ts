@@ -8,9 +8,9 @@ import { Product } from './schema/product.schema';
 
 const uploadImage = (filepath: string): Promise<UploadApiResponse> =>{
     return cloudUploader.upload(filepath,{
-         width: 1280,
-         height: 720,
-        //  crop: 'fit'
+         width: 1080 ,
+         height: 1080 ,
+        crop: 'fill'
      })
  }
 

@@ -26,6 +26,9 @@ export class Order {
     @Prop({type: Number, required: true})
     quantity: number;
 
+    @Prop({type: String, required: false})
+    paymentReference: string;
+
     @Prop({type: String, enum:['pending', "confirmed", "cancelled"]})
     status: string;
 
@@ -38,11 +41,15 @@ export class Order {
     @Prop({type: String, required: false})
     paymentStatus: string;
 
+    @Prop({type: Date})
+    paidAt: Date;
+
     @Prop({type: String, enum:["pending", "processing", "shipped", "delivered"], default: "pending"})
     deliveryStatus: string;
 
     @Prop({type: String, required: false})
     orderNumber: string;
+    
 }
 
 export const orderSchema = SchemaFactory.createForClass(Order);

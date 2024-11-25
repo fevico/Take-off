@@ -10,8 +10,8 @@ import { UploadMiddleware } from './middleware/fileParser';
 import { GoogleModule } from './google/google.module';
 import { SellerModule } from './seller/seller.module';
 import { OrderModule } from './order/order.module';
-import { PaymentModule } from './payment/payment.module';
 import { CartModule } from './cart/cart.module';
+import { BannerModule } from './banner/banner.module';
 
 @Module({
   imports: [
@@ -27,8 +27,8 @@ import { CartModule } from './cart/cart.module';
     GoogleModule,
     SellerModule,
     OrderModule,
-    PaymentModule,
     CartModule,
+    BannerModule,
   ],
   controllers: [AppController],
   providers: [AppService],
@@ -43,6 +43,7 @@ export class AppModule implements NestModule {
         { path: 'product/create', method: RequestMethod.POST },
         { path: 'product/update/:id', method: RequestMethod.PATCH },
         { path: 'auth/update-profile', method: RequestMethod.PATCH },
+        { path: 'banner/create', method: RequestMethod.POST },
       );
   }
 }

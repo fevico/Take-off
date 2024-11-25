@@ -11,19 +11,11 @@ import cloudUploader from 'src/cloud';
 
 const uploadImage = (filepath: string): Promise<UploadApiResponse> => {
   return cloudUploader.upload(filepath, {
-    width: 1280,
-    height: 720,
-    // crop: 'fit', // use 'fit' to maintain aspect ratio
+    width: 300,
+    height: 300,
+    crop: 'fill',
   });
 };
-
-// const uploadImage = (filepath: string): Promise<UploadApiResponse> => {
-//   return cloudUploader.upload(filepath, {
-//     width: 1280,
-//     height: 720,
-//     crop: 'limit', // limits size without cropping or stretching
-//   });
-// };
 
 
 @Injectable()
@@ -35,7 +27,6 @@ export class CategoryService {
   async createCategory(body: any, files: any) {
     const { name } = body;
     let { thumbnail } = files;
-    console.log('Service method started');
 
     try {
       if (!thumbnail) {
