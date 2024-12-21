@@ -1,6 +1,6 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UnprocessableEntityException, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpException, HttpStatus, NotFoundException, Param, Patch, Post, Query, Req, UnprocessableEntityException, UseGuards } from '@nestjs/common';
 import { ProductService } from './product.service';
-import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Roles } from 'src/decorator/role.decorator';
 import { AuthenticationGuard } from 'src/guards/Authentication';
 import { AuthorizationGuard } from 'src/guards/Authorization';
@@ -14,6 +14,7 @@ export class ProductController {
 
     @Roles(['admin', "seller"])
     @Post('create')
+    @UseGuards(AuthenticationGuard, AuthorizationGuard)
     @ApiOperation({ summary: 'Create a new product with file uploads' })
     @ApiBody({
       schema: {
@@ -95,6 +96,7 @@ export class ProductController {
     async createProduct(@Req() req: Request) {
       const fields = req.body as Record<string, any>;
       const files = req['files'] as Record<string, any>;
+      const owner = req.user.id;
   
       // Convert each field as needed
       if (Array.isArray(fields.name)) {
@@ -118,7 +120,7 @@ export class ProductController {
             throw new UnprocessableEntityException('CategoryId is required');
         }
     
-        return this.productService.createProduct(fields, files);
+        return this.productService.createProduct(fields, files, owner);
     }
 
     @Roles(['admin', "seller"])
@@ -298,6 +300,113 @@ export class ProductController {
         return this.productService.getAllProducts();
     }
 
+    @Roles(['admin', "seller"])
+    @Get("user-products")
+    @UseGuards(AuthenticationGuard, AuthorizationGuard)
+    @ApiOperation({
+        summary: 'Get all products created by the current user',
+        description: 'This endpoint allows you to retrieve all products created by the current user.',
+      })
+    @ApiResponse({
+        status: 200,
+        description: 'Get all products created by the current user',
+        schema: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+                id: { type: 'string', example: 'product123' },
+                name: { type: 'string', example: 'Product Name' },
+                description: { type: 'string', example: 'This is a product description' },
+                price: { type: 'number', example: 49.99 },
+            }
+          }
+        }
+    })
+    @ApiResponse({
+        status: 403,
+        description: 'Forbidden. User does not have the necessary permissions.',
+        schema: {
+          type: 'object',
+          properties: {
+            message: { type: 'string', example: 'Forbidden' },
+            error: { type: 'string', example: 'Forbidden' },
+          },
+        },
+    })
+    getProductsByUser(@Req() req: Request) {
+      const user = req.user.id
+        return this.productService.getProductsByUser(user);
+    }
+
+    @Get('search')
+    @ApiQuery({ name: 'searchQuery', required: true, description: 'Search term for product names' })
+    @ApiQuery({ name: 'page', required: false, description: 'Page number for pagination', example: 1 })
+    @ApiQuery({ name: 'limit', required: false, description: 'Number of items per page', example: 10 })
+    async searchProduct(
+      @Query('searchQuery') searchQuery: string,
+      @Query('page') page = 1,
+      @Query('limit') limit = 10,
+    ) {
+      return this.productService.searchProduct(searchQuery, page, limit);
+    }
+
+    @Post(":productId")
+    @ApiOperation({
+      summary: 'Toggle product stock status',
+      description: 'This endpoint toggles the stock status of a product. If the product is marked as "in stock", it will be updated to "out of stock", and vice versa.',
+    })
+    @ApiParam({
+      name: 'productId',
+      description: 'The ID of the product whose stock status you want to toggle.',
+      required: true,
+      example: '64fae2d91b31c8f8a3c2c22a',
+    })
+    @ApiResponse({
+      status: 200,
+      description: 'Product stock status updated successfully.',
+      schema: {
+        example: {
+          message: 'Product stock status updated successfully.',
+          product: {
+            _id: '64fae2d91b31c8f8a3c2c22a',
+            name: 'Example Product',
+            price: 50,
+            inStock: false,
+          },
+        },
+      },
+    })
+    @ApiResponse({
+      status: 404,
+      description: 'Product not found.',
+    })
+    @ApiResponse({
+      status: 400,
+      description: 'Invalid product ID.',
+    })
+    @ApiResponse({
+      status: 500,
+      description: 'Internal server error.',
+    })    
+    async toggleProductStock(@Param('productId') productId: string) {
+      try {
+        // Call the service method to toggle stock status
+        const updatedProduct = await this.productService.toggleProductStock(productId);
+        
+        return {
+          message: 'Product stock status updated successfully.',
+          product: updatedProduct,
+        };
+      } catch (error) {
+        throw new HttpException(
+          { message: 'Error toggling product stock status', error: error.message },
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+    }    
+    
+
     @Get(':id')
     @ApiOperation({
         summary: 'Get a product record',
@@ -446,4 +555,5 @@ export class ProductController {
       getFeaturedProducts() {
       return this.productService.getFeaturedProducts();
     }
-    }
+
+  }

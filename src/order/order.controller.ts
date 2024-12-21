@@ -3,8 +3,10 @@ import { OrderService } from './order.service';
 import { Request } from 'express';
 import { CreateOrderDto } from './dto/order.dto';
 import { AuthenticationGuard } from 'src/guards/Authentication';
+import { ApiTags } from '@nestjs/swagger';
 
 @Controller('order')
+@ApiTags('Order')
 export class OrderController {
     constructor(private readonly orderService: OrderService) {}
 
@@ -16,7 +18,7 @@ export class OrderController {
     }
 
     @Post('webhook')
-    async webhook(@Body() body: any, @Res() res: any, @Req() req: Request) {
+    async webhook(@Body() body: any, @Res() res: any, @Req() req: any) {
         return this.orderService.webhook(req, res);
     }
 }

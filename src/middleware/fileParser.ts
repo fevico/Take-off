@@ -6,10 +6,6 @@ import * as formidable from 'formidable';
 @Injectable()
 export class UploadMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction) {
-    // const relevantRoutes = ['/your-route-1', '/your-route-2'];
-    // if (!relevantRoutes.includes(req.path)) {
-    //   return next(); // Skip middleware for non-relevant routes
-    // }
     const form = new formidable.IncomingForm();
     
     form.parse(req, (err, fields, files) => {

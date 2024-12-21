@@ -1,7 +1,9 @@
 import { Body, Controller, Post, Req } from '@nestjs/common';
 import { BannerService } from './banner.service';
+import { ApiTags } from '@nestjs/swagger';
 
 @Controller('banner')
+@ApiTags('Banner')
 export class BannerController {
     constructor(private bannerService: BannerService) {}
 

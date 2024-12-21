@@ -29,6 +29,9 @@ export class Product {
   @Prop({type: Number})
   totalSale: number;
 
+  @Prop({type: Boolean, default: true})
+  inStock: boolean;
+
   @Prop({
     type:[{
     url: {type: String, required: true},
@@ -38,9 +41,11 @@ export class Product {
 
 images:{url: string, id: string}[]
 
-
   @Prop({type: String, required: true })
   thumbnail: string;
+
+  @Prop({type: Number, required: true})
+  averageRating: number;
 
 }
 

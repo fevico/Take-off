@@ -12,6 +12,7 @@ import { SellerModule } from './seller/seller.module';
 import { OrderModule } from './order/order.module';
 import { CartModule } from './cart/cart.module';
 import { BannerModule } from './banner/banner.module';
+import { ReviewModule } from './review/review.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { BannerModule } from './banner/banner.module';
     OrderModule,
     CartModule,
     BannerModule,
+    ReviewModule,
   ],
   controllers: [AppController],
   providers: [AppService],

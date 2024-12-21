@@ -1,7 +1,7 @@
-import { Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { UploadApiResponse } from 'cloudinary';
-import { Model } from 'mongoose';
+import { isValidObjectId, Model } from 'mongoose';
 import cloudUploader from 'src/cloud';
 import { Product } from './schema/product.schema';
 
@@ -25,12 +25,12 @@ export class ProductService {
         @InjectModel(Product.name) private productModel: Model<Product>
     ){}
 
-    async createProduct(fields: any, files: any){
+    async createProduct(fields: any, files: any, owner: string){
     const {name, description, price, categoryId, quantity, brand, seller} = fields
      const {images} = files
 
      try {
-        const newProduct = new this.productModel({name, price, categoryId, description, quantity})
+        const newProduct = new this.productModel({name, price, categoryId, description, quantity, owner})
  
      let invalidFileType = false
      // if this is the case then we have multiple images
@@ -208,6 +208,7 @@ export class ProductService {
         }
         
     }
+
     async deleteProduct(productId: string, owner: string) {
         const session = await this.productModel.startSession();
         session.startTransaction();
@@ -234,21 +235,84 @@ export class ProductService {
         }
     }
     
-//     // Find a seller by their MongoDB _id
-// const seller = await SellerModel.findById(sellerId);
+    async searchProduct(searchQuery: string, page: number, limit: number) {
+        const skip = (page - 1) * limit;
+      
+        // Build the search query using a regular expression
+        const query = {
+          name: { $regex: searchQuery, $options: 'i' },
+        };
+      
+        try {
+          // Fetch matching products with pagination and populate `categoryId`
+          const products = await this.productModel
+            .find(query)
+            .populate<{categoryId: PopulatedCategory}>({ path: 'categoryId', select: 'name' })
+            .skip(skip)
+            .limit(limit)
+            .select('name price description thumbnail categoryId')
+            .exec();
+      
+          // Count total matching documents for pagination metadata
+          const totalProducts = await this.productModel.countDocuments(query);
+          
+          const result = products.map((product) => ({
+            id: product._id,
+            name: product.name,
+            description: product.description,
+            price: product.price,
+            quantity: product.quantity,
+            thumbnail: product.thumbnail,
+            categoryName: product.categoryId ? product.categoryId.name : 'No category',
+          }))
+      
+          return {
+            pagination: {
+                currentPage: page,
+                totalPages: Math.ceil(totalProducts / limit),
+                totalItems: totalProducts,
+              },
+            result,
 
-// // Reference a seller in another schema
-// const product = new Product({
-//   name: 'Product Name',
-//   seller: seller._id, // Reference to the seller
-//   // other fields
-// });
+          };
+        } catch (error) {
+          console.error('Error searching products:', error);
+          throw new Error('An error occurred while searching for products.');
+        }
+      }
 
-    // Assuming you’re using MongoDB and Mongoose
+      async toggleProductStock(productId: string) {
+        // Validate the product ID
+        if (!isValidObjectId(productId)) {
+          throw new BadRequestException('Invalid product ID.');
+        }
+      
+        // Find the product by ID
+        const product = await this.productModel.findById(productId);
+        if (!product) {
+          throw new NotFoundException('Product not found.');
+        }
+      
+        // Toggle the `inStock` field
+        product.inStock = !product.inStock;
+      
+        // Save the updated product
+        const updatedProduct = await product.save();
+      
+        return updatedProduct;
+      }
+      
+      
     async getFeaturedProducts(){
             const featuredProducts = await this.productModel.find()
               .sort({ createdAt: -1 })
               .limit(10); 
             return featuredProducts;
           };
+
+    async getProductsByUser(user: string){
+        const products = await this.productModel.find({owner: user});
+        if(!products || products.length === 0) throw new NotFoundException('No products found for this user!');
+        return products;
     }
+}
