@@ -433,6 +433,7 @@ export class AuthController {
               avatar: { type: 'string', example: 'https://example.com/avatar.jpg' },
               name: { type: 'string', example: 'John Doe' },
               email: { type: 'string', example: 'johndoe@example.com' },
+              password: { type: 'string', example: 'newPassword' },
             },
           },
         },

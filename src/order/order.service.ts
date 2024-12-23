@@ -14,18 +14,132 @@ const secret = process.env.PAYSTACK_SECRET_KEY;
 export class OrderService {
   constructor(@InjectModel(Order.name) private orderModel: Model<Order>) {}
 
+  // async createPayment(body: any, res: any, userId: string) {
+  //   const {first_name, last_name, amount, email, metadata } = body;
+  //   const {cart, name, note, phone, address} = metadata
+  
+  //   const cartData = cart.cartItems.map((item: any) => ({
+  //     id: item?.id,
+  //     name: item.name,
+  //     category: item.categoryId,
+  //     price: item.price,
+  //     image: item.thumbnail,
+  //     quantity: item.cartQuantity,
+  //     product: item._id,
+  // }));
+
+  //   // 1. Create an order in the database
+  //   const newOrder = new this.orderModel({
+  //     email,
+  //     user: userId,
+  //     price: metadata.price,
+  //     name: metadata.name,
+  //     note: metadata.note,
+  //     phone: metadata.phone,
+  //     address: metadata.address,
+  //     cart: metadata.cart,
+  //     productId: cartData.map((item: any) => item.product),
+  //     paymentStatus: 'pending', // Initial payment status
+  //   });
+  
+  //   const savedOrder = await newOrder.save();
+  
+  //   // Attach the order ID to the metadata
+  //   metadata.orderId = savedOrder._id;
+  
+  //   const params = JSON.stringify({
+  //     amount,
+  //     email,
+  //     metadata,
+  //     callback_url: 'http://localhost:5173/', // Update to your frontend callback URL
+  //   });
+  
+  //   const options = {
+  //     hostname: 'api.paystack.co',
+  //     port: 443,
+  //     path: '/transaction/initialize',
+  //     method: 'POST',
+  //     headers: {
+  //       Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`, // Ensure your Paystack secret key is properly set in the .env file
+  //       'Content-Type': 'application/json',
+  //     },
+  //   };
+  
+  //   // 2. Initialize payment with Paystack
+  //   const reqPaystack = https.request(options, async (respaystack) => {
+  //     let data = '';
+  
+  //     // Collect response data
+  //     respaystack.on('data', (chunk) => {
+  //       data += chunk;
+  //     });
+  
+  //     respaystack.on('end', async () => {
+  //       try {
+  //         const parsedData = JSON.parse(data);
+  //         console.log(data)
+  
+  //         if (parsedData.status) {
+  //           // Update the order with payment reference
+  //           savedOrder.paymentReference = parsedData.data.reference;
+  //           await savedOrder.save();
+  
+  //           // Respond to the client with Paystack authorization URL and order ID
+  //           return res.json({
+  //             message: 'Payment initialized successfully',
+  //             authorization_url: parsedData.data.authorization_url,
+  //             orderId: savedOrder._id,
+  //           });
+  //         } else {
+  //           // Handle failure to initialize payment
+  //           console.error('Payment initialization failed:', parsedData.message);
+  //           return res.status(400).json({
+  //             message: 'Failed to initialize payment',
+  //             error: parsedData.message,
+  //           });
+  //         }
+  //       } catch (error) {
+  //         console.error('Error processing payment initialization response:', error);
+  //         return res.status(500).json({ message: 'Error processing payment initialization response' });
+  //       }
+  //     });
+  //   });
+  
+  //   // Handle errors during the HTTP request
+  //   reqPaystack.on('error', (error) => {
+  //     console.error('Error with Paystack request:', error);
+  //     return res.status(500).json({ message: 'Internal Server Error', error });
+  //   });
+  
+  //   // Write the request parameters and end the request
+  //   reqPaystack.write(params);
+  //   reqPaystack.end();
+  // }
+
   async createPayment(body: any, res: any, userId: string) {
-    const { amount, email, metadata } = body;
+    const { first_name, last_name, amount, email, metadata } = body;
+    const { cart, name, note, phone, address } = metadata;
+  
+    // Extract the necessary fields from cart items
+    const cartData = cart.cartItems.map((item: any) => ({
+      productId: item._id, // Extract the product ID
+      name: item.name, // Optional: Keep this if needed for reference
+      quantity: item.cartQuantity,
+      totalPrice: item.price / 100, 
+    }));
   
     // 1. Create an order in the database
     const newOrder = new this.orderModel({
       email,
       user: userId,
       price: metadata.price,
-      quantity: metadata.quantity,
+      name: metadata.name,
+      note: metadata.note,
+      phone: metadata.phone,
       address: metadata.address,
-      productId: metadata.productId,
-      paymentStatus: 'pending', // Initial payment status
+      cart: cartData,
+      product: cartData.map((item: any) => item.productId),
+      paymentStatus: 'pending'
     });
   
     const savedOrder = await newOrder.save();
@@ -34,6 +148,8 @@ export class OrderService {
     metadata.orderId = savedOrder._id;
   
     const params = JSON.stringify({
+      first_name,
+      last_name,
       amount,
       email,
       metadata,
@@ -63,7 +179,6 @@ export class OrderService {
       respaystack.on('end', async () => {
         try {
           const parsedData = JSON.parse(data);
-          console.log(data)
   
           if (parsedData.status) {
             // Update the order with payment reference
@@ -101,6 +216,7 @@ export class OrderService {
     reqPaystack.write(params);
     reqPaystack.end();
   }
+  
   
 
 //   async webhook( res: any, req: Request) {
