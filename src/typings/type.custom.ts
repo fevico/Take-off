@@ -6,6 +6,11 @@ declare module 'express' {
     user?: {
       id: string;
       role: string;
+      name: string;
+      address: string;
+      phone: string;
+      avatar: string;
+      email: string;
       // Add other user properties as needed
     };
   }

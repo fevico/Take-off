@@ -21,6 +21,7 @@ export class AuthenticationGuard implements CanActivate {
 
             // Set user object and userId in the request
             request.user = decoded;
+            console.log(request.user)
             request.userId = decoded.id;
 
             return true; 

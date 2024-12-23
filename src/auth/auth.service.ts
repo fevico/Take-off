@@ -125,7 +125,7 @@ export class AuthService {
     const payload = { email: user.email, id: user._id, name: user.name, address: user.address, role: user.role};
     const token = this.jwtService.sign(payload, {
       secret: process.env.JWT_SECRET,
-      expiresIn: '1d',
+      expiresIn: '5d',
     });
     return {
       status: true,
@@ -159,9 +159,9 @@ export class AuthService {
     return newUser;
   }
 
-  async updateProfile(body: any, fields: any, files: any, userId: string) {
+  async updateProfile(fields: any, files: any, userId: string) {
     let { avatar } = files;
-    const { name, address, phone } = fields;
+    const { name, address, phone, password } = fields;
 
     try {
         if (avatar) {
@@ -201,14 +201,26 @@ export class AuthService {
             );
             updatedAvatar = { id, url };
           }
+
+          if(password){
+            const salt = await bcrypt.genSalt();
+            const hashedPassword = await bcrypt.hash(password, salt);
+            const updateUser = await this.userModel.findByIdAndUpdate(
+              userId,
+              { name, address, phone, avatar: updatedAvatar, password: hashedPassword },
+              { new: true },
+            );
       
-          const updateUser = await this.userModel.findByIdAndUpdate(
-            userId,
-            { name, address, phone, avatar: updatedAvatar },
-            { new: true },
-          );
+            return {status: true, statusCode: 200, updateUser};
+          }
       
-          return {status: true, statusCode: 200, updateUser};
+          // const updateUser = await this.userModel.findByIdAndUpdate(
+          //   userId,
+          //   { name, address, phone, avatar: updatedAvatar },
+          //   { new: true },
+          // );
+      
+          // return {status: true, statusCode: 200, updateUser};
     } catch (error) {
         throw new UnprocessableEntityException(error.message);
     }

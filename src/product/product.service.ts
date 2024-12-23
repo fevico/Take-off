@@ -14,9 +14,16 @@ const uploadImage = (filepath: string): Promise<UploadApiResponse> =>{
      })
  }
 
- interface PopulatedCategory {
+export interface PopulatedCategory {
     name: string
 }
+
+export interface PaginatedResponse<T> {
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    data: T[];
+  }
 
 @Injectable()
 export class ProductService {
@@ -280,6 +287,57 @@ export class ProductService {
           throw new Error('An error occurred while searching for products.');
         }
       }
+
+      async filterProduct(
+        categoryId?: string,
+        minPrice?: number,
+        maxPrice?: number,
+        page = 1,
+        limit = 10,
+      ): Promise<PaginatedResponse<PopulatedCategory>> {
+        const query: any = {};
+    
+        // Add filters to the query dynamically
+        if (categoryId) {
+          query.categoryId = categoryId;
+        }
+        if (minPrice !== undefined) {
+          query.price = { ...query.price, $gte: minPrice };
+        }
+        if (maxPrice !== undefined) {
+          query.price = { ...query.price, $lte: maxPrice };
+        }
+    
+        // Pagination calculations
+        const skip = (page - 1) * limit;
+    
+        // Execute query with filters and pagination
+        const products = await this.productModel
+          .find(query)
+          .populate<{categoryId: PopulatedCategory}>({ path: 'categoryId', select: 'name' })
+          .skip(skip)
+          .limit(limit)
+          .exec();
+
+          const result = products.map((product) => ({
+            id: product._id,
+            name: product.name,
+            price: product.price,
+            quantity: product.quantity,
+            thumbnail: product.thumbnail,
+            categoryName: product.categoryId ? product.categoryId.name : 'No category',
+          }))
+    
+        const total = await this.productModel.countDocuments(query);
+    
+        return {
+            currentPage: page,
+            totalPages: Math.ceil(total / limit),
+            totalItems: total,
+            data: result,
+        };
+      }
+    
 
       async toggleProductStock(productId: string) {
         // Validate the product ID

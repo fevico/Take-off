@@ -1,4 +1,4 @@
-import { Body, Controller, Patch, Post, Put, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post, Put, Req, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthenticationGuard } from 'src/guards/Authentication';
 import { Request } from 'express';
@@ -408,7 +408,70 @@ export class AuthController {
         if (Array.isArray(fields.phone)) {
           fields.phone = fields.phone[0];
         }    
-        return this.authService.updateProfile(body, fields, files, userId)
+        if (Array.isArray(fields.password)) {
+          fields.password = fields.password[0];
+        }    
+        return this.authService.updateProfile(fields, files, userId)
     }
 
+    @Get('user-details')
+    @UseGuards(AuthenticationGuard)
+    @ApiOperation({
+      summary: 'Get logged-in user details',
+      description: 'This endpoint returns the details of the currently logged-in user, including their phone, address, avatar, and name.',
+    })
+    @ApiResponse({
+      status: 200,
+      description: 'User details retrieved successfully',
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              phone: { type: 'number', example: 8136819208 },
+              address: { type: 'string', example: 'California, USA' },
+              avatar: { type: 'string', example: 'https://example.com/avatar.jpg' },
+              name: { type: 'string', example: 'John Doe' },
+              email: { type: 'string', example: 'johndoe@example.com' },
+            },
+          },
+        },
+      },
+    })
+    @ApiResponse({
+      status: 400,
+      description: 'Validation error or missing fields.',
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              statusCode: { type: 'number', example: 400 },
+              message: { type: 'string', example: 'Validation failed' },
+              error: { type: 'string', example: 'Bad Request' },
+            },
+          },
+        },
+      },
+    })
+    @ApiResponse({
+      status: 403,
+      description: 'Access forbidden for the current user.',
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              statusCode: { type: 'number', example: 403 },
+              message: { type: 'string', example: 'Forbidden' },
+              error: { type: 'string', example: 'Forbidden' },
+            },
+          },
+        },
+      },
+    })
+    async getUserDetails(@Req() req: Request) {
+      const {id, name, email, phone, address, avatar, role} = req.user;
+      return {data:{id, name, email, phone, address, avatar, role}} 
+    }    
 } 

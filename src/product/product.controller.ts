@@ -351,6 +351,27 @@ export class ProductController {
       return this.productService.searchProduct(searchQuery, page, limit);
     }
 
+    @Get('filter')
+    @ApiOperation({
+      summary: 'Filter products by category, price range, and pagination',
+      description: 'Retrieve products filtered by categoryId, minPrice, maxPrice, with pagination support.',
+    })
+    @ApiQuery({ name: 'categoryId', required: false, description: 'Filter by category ID' })
+    @ApiQuery({ name: 'minPrice', required: false, description: 'Minimum price filter', example: 0 })
+    @ApiQuery({ name: 'maxPrice', required: false, description: 'Maximum price filter', example: 1000 })
+    @ApiQuery({ name: 'page', required: false, description: 'Page number for pagination', example: 1 })
+    @ApiQuery({ name: 'limit', required: false, description: 'Number of items per page', example: 10 })
+    async filterProduct(
+      @Query('category') category?: string,
+      @Query('minPrice') minPrice?: number,
+      @Query('maxPrice') maxPrice?: number,
+      @Query('page') page = 1,
+      @Query('limit') limit = 10,
+    ) {
+      return this.productService.filterProduct(category, minPrice, maxPrice, page, limit);
+    }
+  
+
     @Post(":productId")
     @ApiOperation({
       summary: 'Toggle product stock status',
