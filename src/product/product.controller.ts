@@ -230,20 +230,27 @@ export class ProductController {
         return this.productService.updateProduct(fields, files, id, owner);
 
     }
-
-    @Get('all') 
+    @Get('all')
     @ApiOperation({
-        summary: 'Get all product record',
-        description: 'This endpoint allows you to retrieve all product record.'
-      })
+      summary: 'Get all product records with pagination',
+      description: 'Retrieve paginated product records.',
+    })
+    @ApiQuery({ name: 'page', required: false, description: 'Page number for pagination', example: 1 })
+    @ApiQuery({ name: 'limit', required: false, description: 'Number of items per page', example: 10 })
     @ApiResponse({
-        status: 200,
-        description: 'Get all products',
-        schema: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
+      status: 200,
+      description: 'Get paginated products',
+      schema: {
+        type: 'object',
+        properties: {
+          currentPage: { type: 'number', example: 1 },
+          totalPages: { type: 'number', example: 5 },
+          totalItems: { type: 'number', example: 50 },
+          data: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
                 id: { type: 'string', example: 'product123' },
                 name: { type: 'string', example: 'Product Name' },
                 description: { type: 'string', example: 'This is a product description' },
@@ -267,38 +274,40 @@ export class ProductController {
                     url: { type: 'string', example: 'http://res.cloudinary.com/thumbnail.jpg' },
                   },
                 },
+              },
             },
           },
         },
-      })
-      @ApiResponse({
-        status: 400,
-        description: 'Bad Request. Validation error or missing fields.',
-        schema: {
-          type: 'object',
-          properties: {
-            statusCode: { type: 'number', example: 400 },
-            message: { type: 'string', example: 'Validation failed' },
-            error: { type: 'string', example: 'Bad Request' },
-          },
+      },
+    })
+    @ApiResponse({
+      status: 400,
+      description: 'Bad Request. Validation error or missing fields.',
+      schema: {
+        type: 'object',
+        properties: {
+          statusCode: { type: 'number', example: 400 },
+          message: { type: 'string', example: 'Validation failed' },
+          error: { type: 'string', example: 'Bad Request' },
         },
-      })
-      @ApiResponse({
-        status: 403,
-        description: 'Forbidden. User does not have the necessary permissions.',
-        schema: {
-          type: 'object',
-          properties: {
-            statusCode: { type: 'number', example: 403 },
-            message: { type: 'string', example: 'Forbidden' },
-            error: { type: 'string', example: 'Forbidden' },
-          },
+      },
+    })
+    @ApiResponse({
+      status: 403,
+      description: 'Forbidden. User does not have the necessary permissions.',
+      schema: {
+        type: 'object',
+        properties: {
+          statusCode: { type: 'number', example: 403 },
+          message: { type: 'string', example: 'Forbidden' },
+          error: { type: 'string', example: 'Forbidden' },
         },
-      })
-    
-    getAllProducts() {
-        return this.productService.getAllProducts();
+      },
+    })
+    getAllProducts(@Query('page') page = 1, @Query('limit') limit = 10) {
+      return this.productService.getAllProducts(page, limit);
     }
+    
 
     @Roles(['admin', "seller"])
     @Get("user-products")

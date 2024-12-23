@@ -167,30 +167,49 @@ export class ProductService {
         
     }
     
-    async getAllProducts() {
-        const products = await this.productModel
+    async getAllProducts(page: number, limit: number) {
+      // Convert page and limit to numbers
+      page = Math.max(1, Number(page));
+      limit = Math.max(1, Number(limit));
+    
+      const skip = (page - 1) * limit;
+    
+      // Fetch products with pagination
+      const [products, totalItems] = await Promise.all([
+        this.productModel
           .find()
+          .skip(skip)
+          .limit(limit)
           .populate<{ categoryId: PopulatedCategory }>({
             path: 'categoryId',
-            select: 'name', // select only the name field
-          });
-      
-        if (!products || products.length === 0) {
-          throw new NotFoundException('No products found');
-        }
-      
-        // Map through the products array and return the desired structure
-        return products.map((product) => ({
-          id: product._id,
-          name: product.name,
-          description: product.description,
-          price: product.price,
-          quantity: product.quantity,
-          images: product.images,
-          thumbnail: product.thumbnail,
-          categoryName: product.categoryId ? product.categoryId.name : 'No category', // Handle missing categoryId
-        }));
+            select: 'name',
+          }),
+        this.productModel.countDocuments(),
+      ]);
+    
+      if (!products || products.length === 0) {
+        throw new NotFoundException('No products found');
       }
+    
+      // Map through the products array and return the desired structure
+      const data = products.map((product) => ({
+        id: product._id,
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        quantity: product.quantity,
+        images: product.images,
+        thumbnail: product.thumbnail,
+        categoryName: product.categoryId ? product.categoryId.name : 'No category', // Handle missing categoryId
+      }));
+    
+      return {
+        currentPage: page,
+        totalPages: Math.ceil(totalItems / limit),
+        totalItems,
+        data,
+      };
+    }
 
     async getProductById(productId: string){
         try {
