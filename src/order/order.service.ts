@@ -118,14 +118,13 @@ export class OrderService {
 
   async createPayment(body: any, res: any, userId: string) {
     const { first_name, last_name, amount, email, metadata } = body;
-    const { cart, name, note, phone, address } = metadata;
+    const { cart, name, note, phone, address, quantity } = metadata;
   
     // Extract the necessary fields from cart items
-    const cartData = cart.cartItems.map((item: any) => ({
+    const cartData = cart.map((item: any) => ({
       productId: item._id, // Extract the product ID
-      name: item.name, // Optional: Keep this if needed for reference
       quantity: item.cartQuantity,
-      totalPrice: item.price / 100, 
+      image: item.thumbnail,
     }));
   
     // 1. Create an order in the database
