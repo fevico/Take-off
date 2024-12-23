@@ -7,14 +7,8 @@ export class CartItem {
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Product', required: true })
   product: Types.ObjectId;
 
-  @Prop({ type: String, required: true })
-  name: string;
-
   @Prop({ type: Number, required: true })
   quantity: number;
-
-  @Prop({ type: Number, required: true })
-  price: number;
 }
 
 // Create the CartItem schema first

@@ -122,10 +122,9 @@ export class OrderService {
   
     // Extract the necessary fields from cart items
     const cartData = cart.map((item: any) => ({
-      productId: item._id, // Extract the product ID
-      quantity: item.cartQuantity,
-      image: item.thumbnail,
-    }));
+      product: item.product,
+      quantity: item.quantity, 
+    })); 
   
     // 1. Create an order in the database
     const newOrder = new this.orderModel({
@@ -136,8 +135,8 @@ export class OrderService {
       note: metadata.note,
       phone: metadata.phone,
       address: metadata.address,
-      cart: cartData,
-      product: cartData.map((item: any) => item.productId),
+      cartItems: cartData,
+      product: cartData.map((item: any) => item.product),
       paymentStatus: 'pending'
     });
   
