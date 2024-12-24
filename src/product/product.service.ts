@@ -16,6 +16,7 @@ const uploadImage = (filepath: string): Promise<UploadApiResponse> =>{
 
 export interface PopulatedCategory {
     name: string
+    _id: string
 }
 
 export interface PaginatedResponse<T> {
@@ -363,6 +364,7 @@ export class ProductService {
           price: product.price,
           thumbnail: product.thumbnail,
           categoryName: product.categoryId ? product.categoryId.name : 'No category',
+          categoryId: product.categoryId ? product.categoryId._id : null,
         }));
     
         return {
@@ -465,6 +467,7 @@ export class ProductService {
                 description: 1,
                 thumbnail: 1,
                 categoryId: 1,
+                category: 1
               }, // Select fields to return
             },
           ]);
@@ -482,6 +485,7 @@ export class ProductService {
             price: product.price,
             thumbnail: product.thumbnail,
             categoryName: product.categoryId?.name || 'No category',
+            categoryId: product.categoryId?._id,
           }));
       
           return result;
@@ -534,8 +538,17 @@ export class ProductService {
           
 
     async getProductsByUser(user: string){
-        const products = await this.productModel.find({owner: user});
+        const products = await this.productModel.find({owner: user}).populate<{categoryId: PopulatedCategory}>({path:'categoryId', select: 'name'});
         if(!products || products.length === 0) throw new NotFoundException('No products found for this user!');
-        return products;
+        const productOwner = products.map((product) => ({
+            id: product._id,
+            name: product.name,
+            description: product.description,
+            price: product.price,
+            thumbnail: product.thumbnail,
+            categoryName: product.categoryId?.name || 'No category',
+            categoryId: product.categoryId?._id,
+        }))
+        return productOwner;
     }
 }
