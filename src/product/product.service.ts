@@ -445,85 +445,85 @@ export class ProductService {
         return updatedProduct;
       }
       
-      // async getRandomProducts() {
-      //   try {
-      //     // Fetch 20 random products
-      //     const randomProducts = await this.productModel.aggregate([
-      //       { $sample: { size: 20 } }, // Select 20 random products
-      //       {
-      //         $project: {
-      //           _id: 1,
-      //           name: 1,
-      //           price: 1,
-      //           description: 1,
-      //           thumbnail: 1,
-      //           categoryId: 1,
-      //         }, // Select fields to return
-      //       },
-      //     ]);
+      async getFeaturedProducts() {
+        try {
+          // Fetch 20 random products
+          const randomProducts = await this.productModel.aggregate([
+            { $sample: { size: 20 } }, // Select 20 random products
+            {
+              $project: {
+                _id: 1,
+                name: 1,
+                price: 1,
+                description: 1,
+                thumbnail: 1,
+                categoryId: 1,
+              }, // Select fields to return
+            },
+          ]);
       
-      //     // Populate category details if needed
-      //     const populatedProducts = await this.productModel.populate(randomProducts, {
-      //       path: 'categoryId',
-      //       select: 'name',
-      //     });
+          // Populate category details if needed
+          const populatedProducts = await this.productModel.populate<{categoryId: PopulatedCategory}>(randomProducts, {
+            path: 'categoryId',
+            select: 'name',
+          });
       
-      //     const result = populatedProducts.map((product) => ({
-      //       id: product._id,
-      //       name: product.name,
-      //       description: product.description,
-      //       price: product.price,
-      //       thumbnail: product.thumbnail,
-      //       categoryName: product.categoryId?.name || 'No category',
-      //     }));
+          const result = populatedProducts.map((product) => ({
+            id: product._id,
+            name: product.name,
+            description: product.description,
+            price: product.price,
+            thumbnail: product.thumbnail,
+            categoryName: product.categoryId?.name || 'No category',
+          }));
       
-      //     return result;
-      //   } catch (error) {
-      //     console.error('Error fetching random products:', error);
-      //     throw new Error('An error occurred while fetching random products.');
-      //   }
-      // }
+          return result;
+        } catch (error) {
+          console.error('Error fetching random products:', error);
+          throw new Error('An error occurred while fetching random products.');
+        }
+      }
       
-    async getFeaturedProducts() {
-            try {
-              // Fetch 20 random products where `isFeatured` is true
-              const featuredProducts = await this.productModel.aggregate([
-                { $match: { isFeatured: true } }, // Filter only featured products
-                { $sample: { size: 20 } }, // Select 20 random products
-                {
-                  $project: {
-                    _id: 1,
-                    name: 1,
-                    price: 1,
-                    description: 1,
-                    thumbnail: 1,
-                    categoryId: 1,
-                  }, // Select fields to return
-                },
-              ]);
+    // async getFeaturedProducts() {
+    //         try {
+    //           // Fetch 20 random products where `isFeatured` is true
+    //           const featuredProducts = await this.productModel.aggregate([
+    //             { $match: { isFeatured: true } }, // Filter only featured products
+    //             { $sample: { size: 20 } }, // Select 20 random products
+    //             {
+    //               $project: {
+    //                 _id: 1,
+    //                 name: 1,
+    //                 price: 1,
+    //                 description: 1,
+    //                 thumbnail: 1,
+    //                 categoryId: 1,
+    //               }, // Select fields to return
+    //             },
+    //           ]);
           
-              // Populate category details if needed
-              const populatedProducts = await this.productModel.populate<{categoryId: PopulatedCategory}>(featuredProducts, {
-                path: 'categoryId',
-                select: 'name',
-              });
+    //           // Populate category details if needed
+    //           const populatedProducts = await this.productModel.populate<{categoryId: PopulatedCategory}>(featuredProducts, {
+    //             path: 'categoryId',
+    //             select: 'name',
+    //           });
           
-              // Map results to format the response
-              const result = populatedProducts.map((product) => ({
-                id: product._id,
-                name: product.name,
-                description: product.description,
-                price: product.price,
-                thumbnail: product.thumbnail,
-                categoryName: product.categoryId?.name || 'No category',
-              }));
+    //           // Map results to format the response
+    //           const result = populatedProducts.map((product) => ({
+    //             id: product._id,
+    //             name: product.name,
+    //             description: product.description,
+    //             price: product.price,
+    //             thumbnail: product.thumbnail,
+    //             categoryName: product.categoryId?.name || 'No category',
+    //           }));
           
-              return result;
-            } catch (error) {
-              console.error('Error fetching featured products:', error);
-              throw new Error('An error occurred while fetching featured products.');
-            }
-    }
+    //           return result;
+    //         } catch (error) {
+    //           console.error('Error fetching featured products:', error);
+    //           throw new Error('An error occurred while fetching featured products.');
+    //         }
+    // }
           
 
     async getProductsByUser(user: string){
