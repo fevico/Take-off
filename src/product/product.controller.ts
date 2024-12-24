@@ -355,20 +355,20 @@ export class ProductController {
       description: 'Retrieve products based on search query, category, price range, and pagination.',
     })
     @ApiQuery({ name: 'searchQuery', required: false, description: 'Search term for product names' })
-    @ApiQuery({ name: 'categoryId', required: false, description: 'Filter by category ID' })
+    @ApiQuery({ name: 'categories', required: false, description: 'Filter by category ID' })
     @ApiQuery({ name: 'minPrice', required: false, description: 'Minimum price filter', example: 0 })
     @ApiQuery({ name: 'maxPrice', required: false, description: 'Maximum price filter', example: 1000 })
     @ApiQuery({ name: 'page', required: false, description: 'Page number for pagination', example: 1 })
     @ApiQuery({ name: 'limit', required: false, description: 'Number of items per page', example: 10 })
     async getProducts(
       @Query('searchQuery') searchQuery?: string,
-      @Query('category') category?: string,
+      @Query('categories') categories?: string[],
       @Query('minPrice') minPrice?: number,
       @Query('maxPrice') maxPrice?: number,
       @Query('page') page = 1,
       @Query('limit') limit = 10,
     ) {
-      return this.productService.getProducts({ searchQuery, category, minPrice, maxPrice, page, limit });
+      return this.productService.getProducts({ searchQuery, categories, minPrice, maxPrice, page, limit });
     }
 
     @Roles(['admin', "seller"])

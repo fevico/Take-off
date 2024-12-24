@@ -307,70 +307,77 @@ export class ProductService {
     //     }
     //   }
 
-      async getProducts(filters: {
-        searchQuery?: string;
-        category?: string;
-        minPrice?: number;
-        maxPrice?: number;
-        page: number;
-        limit: number;
-      }) {
-        const { searchQuery, category, minPrice, maxPrice, page, limit } = filters;
-      
-        const skip = (page - 1) * limit;
-        const query: any = {};
-      
-        // Add search query
-        if (searchQuery) {
-          query.name = { $regex: searchQuery, $options: 'i' };
-        }
-      
-        // Add category filter
-        if (category) {
-          query.categoryId = category;
-        }
-      
-        // Add price range filter
-        if (minPrice !== undefined || maxPrice !== undefined) {
-          query.price = {};
-          if (minPrice !== undefined) query.price.$gte = minPrice;
-          if (maxPrice !== undefined) query.price.$lte = maxPrice;
-        }
-      
-        try {
-          // Fetch products with pagination
-          const products = await this.productModel
-            .find(query)
-            .populate<{ categoryId: PopulatedCategory }>({ path: 'categoryId', select: 'name' })
-            .skip(skip)
-            .limit(limit)
-            .select('name price description thumbnail categoryId')
-            .exec();
-      
-          // Count total matching documents for pagination metadata
-          const totalProducts = await this.productModel.countDocuments(query); 
-      
-          const result = products.map((product) => ({
-            id: product._id,
-            name: product.name,
-            price: product.price,
-            thumbnail: product.thumbnail,
-            categoryName: product.categoryId ? product.categoryId.name : 'No category',
-          }));  
-      
-          return {
-            pagination: {
-              currentPage: page,
-              totalPages: Math.ceil(totalProducts / limit),
-              totalItems: totalProducts,
-            },
-            result,
-          };
-        } catch (error) {
-          console.error('Error fetching products:', error);
-          throw new Error('An error occurred while fetching products.');
-        }
+    async getProducts(filters: {
+      searchQuery?: string;
+      categories?: string[];
+      minPrice?: number;
+      maxPrice?: number;
+      inStock?: boolean;
+      page: number;
+      limit: number;
+    }) {
+      const { searchQuery, categories, minPrice, maxPrice, inStock, page, limit } = filters;
+    
+      const skip = (page - 1) * limit;
+      const query: any = {};
+    
+      // Add search query
+      if (searchQuery) {
+        query.name = { $regex: searchQuery, $options: 'i' };
       }
+    
+      // Add category filter for multiple categories
+      if (categories && categories.length > 0) {
+        query.categoryId = { $in: categories }; // Match any of the categories
+      }
+    
+      // Add price range filter
+      if (minPrice !== undefined || maxPrice !== undefined) {
+        query.price = {};
+        if (minPrice !== undefined) query.price.$gte = minPrice;
+        if (maxPrice !== undefined) query.price.$lte = maxPrice;
+      }
+    
+      // Add inStock filter if provided
+      if (inStock !== undefined) {
+        query.inStock = true;
+      }
+    
+      try {
+        // Fetch products with pagination, sorted by latest (assuming `createdAt` field exists)
+        const products = await this.productModel
+          .find(query)
+          .populate<{ categoryId: PopulatedCategory }>({ path: 'categoryId', select: 'name' })
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .select('name price description thumbnail categoryId')
+          .exec();
+    
+        // Count total matching documents for pagination metadata
+        const totalProducts = await this.productModel.countDocuments(query);
+    
+        const result = products.map((product) => ({
+          id: product._id,
+          name: product.name,
+          price: product.price,
+          thumbnail: product.thumbnail,
+          categoryName: product.categoryId ? product.categoryId.name : 'No category',
+        }));
+    
+        return {
+          pagination: {
+            currentPage: page,
+            totalPages: Math.ceil(totalProducts / limit),
+            totalItems: totalProducts,
+          },
+          result,
+        };
+      } catch (error) {
+        console.error('Error fetching products:', error);
+        throw new Error('An error occurred while fetching products.');
+      }
+    }    
 
       
       // async filterProduct(
