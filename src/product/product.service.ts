@@ -261,101 +261,167 @@ export class ProductService {
         }
     }
     
-    async searchProduct(searchQuery: string, page: number, limit: number) {
-        const skip = (page - 1) * limit;
+    // async searchProduct(searchQuery: string, page: number, limit: number) {
+    //     const skip = (page - 1) * limit;
       
-        // Build the search query using a regular expression
-        const query = {
-          name: { $regex: searchQuery, $options: 'i' },
-        };
+    //     // Build the search query using a regular expression
+    //     const query = {
+    //       name: { $regex: searchQuery, $options: 'i' },
+    //     };
+      
+    //     try {
+    //       // Fetch matching products with pagination and populate `categoryId`
+    //       const products = await this.productModel
+    //         .find(query)
+    //         .populate<{categoryId: PopulatedCategory}>({ path: 'categoryId', select: 'name' })
+    //         .skip(skip)
+    //         .limit(limit)
+    //         .select('name price description thumbnail categoryId')
+    //         .exec();
+      
+    //       // Count total matching documents for pagination metadata
+    //       const totalProducts = await this.productModel.countDocuments(query);
+          
+    //       const result = products.map((product) => ({
+    //         id: product._id,
+    //         name: product.name,
+    //         description: product.description,
+    //         price: product.price,
+    //         quantity: product.quantity,
+    //         thumbnail: product.thumbnail,
+    //         categoryName: product.categoryId ? product.categoryId.name : 'No category',
+    //       }))
+      
+    //       return {
+    //         pagination: {
+    //             currentPage: page,
+    //             totalPages: Math.ceil(totalProducts / limit),
+    //             totalItems: totalProducts,
+    //           },
+    //         result,
+
+    //       };
+    //     } catch (error) {
+    //       console.error('Error searching products:', error);
+    //       throw new Error('An error occurred while searching for products.');
+    //     }
+    //   }
+
+      async getProducts(filters: {
+        searchQuery?: string;
+        category?: string;
+        minPrice?: number;
+        maxPrice?: number;
+        page: number;
+        limit: number;
+      }) {
+        const { searchQuery, category, minPrice, maxPrice, page, limit } = filters;
+      
+        const skip = (page - 1) * limit;
+        const query: any = {};
+      
+        // Add search query
+        if (searchQuery) {
+          query.name = { $regex: searchQuery, $options: 'i' };
+        }
+      
+        // Add category filter
+        if (category) {
+          query.categoryId = category;
+        }
+      
+        // Add price range filter
+        if (minPrice !== undefined || maxPrice !== undefined) {
+          query.price = {};
+          if (minPrice !== undefined) query.price.$gte = minPrice;
+          if (maxPrice !== undefined) query.price.$lte = maxPrice;
+        }
       
         try {
-          // Fetch matching products with pagination and populate `categoryId`
+          // Fetch products with pagination
           const products = await this.productModel
             .find(query)
-            .populate<{categoryId: PopulatedCategory}>({ path: 'categoryId', select: 'name' })
+            .populate<{ categoryId: PopulatedCategory }>({ path: 'categoryId', select: 'name' })
             .skip(skip)
             .limit(limit)
             .select('name price description thumbnail categoryId')
             .exec();
       
           // Count total matching documents for pagination metadata
-          const totalProducts = await this.productModel.countDocuments(query);
-          
+          const totalProducts = await this.productModel.countDocuments(query); 
+      
           const result = products.map((product) => ({
             id: product._id,
             name: product.name,
-            description: product.description,
             price: product.price,
-            quantity: product.quantity,
             thumbnail: product.thumbnail,
             categoryName: product.categoryId ? product.categoryId.name : 'No category',
-          }))
+          }));  
       
           return {
             pagination: {
-                currentPage: page,
-                totalPages: Math.ceil(totalProducts / limit),
-                totalItems: totalProducts,
-              },
+              currentPage: page,
+              totalPages: Math.ceil(totalProducts / limit),
+              totalItems: totalProducts,
+            },
             result,
-
           };
         } catch (error) {
-          console.error('Error searching products:', error);
-          throw new Error('An error occurred while searching for products.');
+          console.error('Error fetching products:', error);
+          throw new Error('An error occurred while fetching products.');
         }
       }
 
-      async filterProduct(
-        categoryId?: string,
-        minPrice?: number,
-        maxPrice?: number,
-        page = 1,
-        limit = 10,
-      ): Promise<PaginatedResponse<PopulatedCategory>> {
-        const query: any = {};
+      
+      // async filterProduct(
+      //   categoryId?: string,
+      //   minPrice?: number,
+      //   maxPrice?: number,
+      //   page = 1,
+      //   limit = 10,
+      // ): Promise<PaginatedResponse<PopulatedCategory>> {
+      //   const query: any = {};
     
-        // Add filters to the query dynamically
-        if (categoryId) {
-          query.categoryId = categoryId;
-        }
-        if (minPrice !== undefined) {
-          query.price = { ...query.price, $gte: minPrice };
-        }
-        if (maxPrice !== undefined) {
-          query.price = { ...query.price, $lte: maxPrice };
-        }
+      //   // Add filters to the query dynamically
+      //   if (categoryId) {
+      //     query.categoryId = categoryId;
+      //   }
+      //   if (minPrice !== undefined) {
+      //     query.price = { ...query.price, $gte: minPrice };
+      //   }
+      //   if (maxPrice !== undefined) {
+      //     query.price = { ...query.price, $lte: maxPrice };
+      //   }
     
-        // Pagination calculations
-        const skip = (page - 1) * limit;
+      //   // Pagination calculations
+      //   const skip = (page - 1) * limit;
     
-        // Execute query with filters and pagination
-        const products = await this.productModel
-          .find(query)
-          .populate<{categoryId: PopulatedCategory}>({ path: 'categoryId', select: 'name' })
-          .skip(skip)
-          .limit(limit)
-          .exec();
+      //   // Execute query with filters and pagination
+      //   const products = await this.productModel
+      //     .find(query)
+      //     .populate<{categoryId: PopulatedCategory}>({ path: 'categoryId', select: 'name' })
+      //     .skip(skip)
+      //     .limit(limit)
+      //     .exec();
 
-          const result = products.map((product) => ({
-            id: product._id,
-            name: product.name,
-            price: product.price,
-            quantity: product.quantity,
-            thumbnail: product.thumbnail,
-            categoryName: product.categoryId ? product.categoryId.name : 'No category',
-          }))
+      //     const result = products.map((product) => ({
+      //       id: product._id,
+      //       name: product.name,
+      //       price: product.price,
+      //       quantity: product.quantity,
+      //       thumbnail: product.thumbnail,
+      //       categoryName: product.categoryId ? product.categoryId.name : 'No category',
+      //     }))
     
-        const total = await this.productModel.countDocuments(query);
+      //   const total = await this.productModel.countDocuments(query);
     
-        return {
-            currentPage: page,
-            totalPages: Math.ceil(total / limit),
-            totalItems: total,
-            data: result,
-        };
-      }
+      //   return {
+      //       currentPage: page,
+      //       totalPages: Math.ceil(total / limit),
+      //       totalItems: total,
+      //       data: result,
+      //   };
+      // }
     
 
       async toggleProductStock(productId: string) {
@@ -379,13 +445,86 @@ export class ProductService {
         return updatedProduct;
       }
       
+      // async getRandomProducts() {
+      //   try {
+      //     // Fetch 20 random products
+      //     const randomProducts = await this.productModel.aggregate([
+      //       { $sample: { size: 20 } }, // Select 20 random products
+      //       {
+      //         $project: {
+      //           _id: 1,
+      //           name: 1,
+      //           price: 1,
+      //           description: 1,
+      //           thumbnail: 1,
+      //           categoryId: 1,
+      //         }, // Select fields to return
+      //       },
+      //     ]);
       
-    async getFeaturedProducts(){
-            const featuredProducts = await this.productModel.find()
-              .sort({ createdAt: -1 })
-              .limit(10); 
-            return featuredProducts;
-          };
+      //     // Populate category details if needed
+      //     const populatedProducts = await this.productModel.populate(randomProducts, {
+      //       path: 'categoryId',
+      //       select: 'name',
+      //     });
+      
+      //     const result = populatedProducts.map((product) => ({
+      //       id: product._id,
+      //       name: product.name,
+      //       description: product.description,
+      //       price: product.price,
+      //       thumbnail: product.thumbnail,
+      //       categoryName: product.categoryId?.name || 'No category',
+      //     }));
+      
+      //     return result;
+      //   } catch (error) {
+      //     console.error('Error fetching random products:', error);
+      //     throw new Error('An error occurred while fetching random products.');
+      //   }
+      // }
+      
+    async getFeaturedProducts() {
+            try {
+              // Fetch 20 random products where `isFeatured` is true
+              const featuredProducts = await this.productModel.aggregate([
+                { $match: { isFeatured: true } }, // Filter only featured products
+                { $sample: { size: 20 } }, // Select 20 random products
+                {
+                  $project: {
+                    _id: 1,
+                    name: 1,
+                    price: 1,
+                    description: 1,
+                    thumbnail: 1,
+                    categoryId: 1,
+                  }, // Select fields to return
+                },
+              ]);
+          
+              // Populate category details if needed
+              const populatedProducts = await this.productModel.populate<{categoryId: PopulatedCategory}>(featuredProducts, {
+                path: 'categoryId',
+                select: 'name',
+              });
+          
+              // Map results to format the response
+              const result = populatedProducts.map((product) => ({
+                id: product._id,
+                name: product.name,
+                description: product.description,
+                price: product.price,
+                thumbnail: product.thumbnail,
+                categoryName: product.categoryId?.name || 'No category',
+              }));
+          
+              return result;
+            } catch (error) {
+              console.error('Error fetching featured products:', error);
+              throw new Error('An error occurred while fetching featured products.');
+            }
+    }
+          
 
     async getProductsByUser(user: string){
         const products = await this.productModel.find({owner: user});

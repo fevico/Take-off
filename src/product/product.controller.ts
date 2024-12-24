@@ -230,83 +230,84 @@ export class ProductController {
         return this.productService.updateProduct(fields, files, id, owner);
 
     }
-    @Get('all')
-    @ApiOperation({
-      summary: 'Get all product records with pagination',
-      description: 'Retrieve paginated product records.',
-    })
-    @ApiQuery({ name: 'page', required: false, description: 'Page number for pagination', example: 1 })
-    @ApiQuery({ name: 'limit', required: false, description: 'Number of items per page', example: 10 })
-    @ApiResponse({
-      status: 200,
-      description: 'Get paginated products',
-      schema: {
-        type: 'object',
-        properties: {
-          currentPage: { type: 'number', example: 1 },
-          totalPages: { type: 'number', example: 5 },
-          totalItems: { type: 'number', example: 50 },
-          data: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                id: { type: 'string', example: 'product123' },
-                name: { type: 'string', example: 'Product Name' },
-                description: { type: 'string', example: 'This is a product description' },
-                price: { type: 'number', example: 49.99 },
-                quantity: { type: 'number', example: 100 },
-                categoryName: { type: 'string', example: 'Electronics' },
-                images: {
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      id: { type: 'string', example: 'img123' },
-                      url: { type: 'string', example: 'http://res.cloudinary.com/image.jpg' },
-                    },
-                  },
-                },
-                thumbnail: {
-                  type: 'object',
-                  properties: {
-                    id: { type: 'string', example: 'thumb123' },
-                    url: { type: 'string', example: 'http://res.cloudinary.com/thumbnail.jpg' },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    })
-    @ApiResponse({
-      status: 400,
-      description: 'Bad Request. Validation error or missing fields.',
-      schema: {
-        type: 'object',
-        properties: {
-          statusCode: { type: 'number', example: 400 },
-          message: { type: 'string', example: 'Validation failed' },
-          error: { type: 'string', example: 'Bad Request' },
-        },
-      },
-    })
-    @ApiResponse({
-      status: 403,
-      description: 'Forbidden. User does not have the necessary permissions.',
-      schema: {
-        type: 'object',
-        properties: {
-          statusCode: { type: 'number', example: 403 },
-          message: { type: 'string', example: 'Forbidden' },
-          error: { type: 'string', example: 'Forbidden' },
-        },
-      },
-    })
-    getAllProducts(@Query('page') page = 1, @Query('limit') limit = 10) {
-      return this.productService.getAllProducts(page, limit);
-    }
+
+    // @Get('all')
+    // @ApiOperation({
+    //   summary: 'Get all product records with pagination',
+    //   description: 'Retrieve paginated product records.',
+    // })
+    // @ApiQuery({ name: 'page', required: false, description: 'Page number for pagination', example: 1 })
+    // @ApiQuery({ name: 'limit', required: false, description: 'Number of items per page', example: 10 })
+    // @ApiResponse({
+    //   status: 200,
+    //   description: 'Get paginated products',
+    //   schema: {
+    //     type: 'object',
+    //     properties: {
+    //       currentPage: { type: 'number', example: 1 },
+    //       totalPages: { type: 'number', example: 5 },
+    //       totalItems: { type: 'number', example: 50 },
+    //       data: {
+    //         type: 'array',
+    //         items: {
+    //           type: 'object',
+    //           properties: {
+    //             id: { type: 'string', example: 'product123' },
+    //             name: { type: 'string', example: 'Product Name' },
+    //             description: { type: 'string', example: 'This is a product description' },
+    //             price: { type: 'number', example: 49.99 },
+    //             quantity: { type: 'number', example: 100 },
+    //             categoryName: { type: 'string', example: 'Electronics' },
+    //             images: {
+    //               type: 'array',
+    //               items: {
+    //                 type: 'object',
+    //                 properties: {
+    //                   id: { type: 'string', example: 'img123' },
+    //                   url: { type: 'string', example: 'http://res.cloudinary.com/image.jpg' },
+    //                 },
+    //               },
+    //             },
+    //             thumbnail: {
+    //               type: 'object',
+    //               properties: {
+    //                 id: { type: 'string', example: 'thumb123' },
+    //                 url: { type: 'string', example: 'http://res.cloudinary.com/thumbnail.jpg' },
+    //               },
+    //             },
+    //           },
+    //         },
+    //       },
+    //     },
+    //   },
+    // })
+    // @ApiResponse({
+    //   status: 400,
+    //   description: 'Bad Request. Validation error or missing fields.',
+    //   schema: {
+    //     type: 'object',
+    //     properties: {
+    //       statusCode: { type: 'number', example: 400 },
+    //       message: { type: 'string', example: 'Validation failed' },
+    //       error: { type: 'string', example: 'Bad Request' },
+    //     },
+    //   },
+    // })
+    // @ApiResponse({
+    //   status: 403,
+    //   description: 'Forbidden. User does not have the necessary permissions.',
+    //   schema: {
+    //     type: 'object',
+    //     properties: {
+    //       statusCode: { type: 'number', example: 403 },
+    //       message: { type: 'string', example: 'Forbidden' },
+    //       error: { type: 'string', example: 'Forbidden' },
+    //     },
+    //   },
+    // })
+    // getAllProducts(@Query('page') page = 1, @Query('limit') limit = 10) {
+    //   return this.productService.getAllProducts(page, limit);
+    // }
     
 
     @Roles(['admin', "seller"])
@@ -348,78 +349,69 @@ export class ProductController {
         return this.productService.getProductsByUser(user);
     }
 
-    @Get('search')
-    @ApiQuery({ name: 'searchQuery', required: true, description: 'Search term for product names' })
-    @ApiQuery({ name: 'page', required: false, description: 'Page number for pagination', example: 1 })
-    @ApiQuery({ name: 'limit', required: false, description: 'Number of items per page', example: 10 })
-    async searchProduct(
-      @Query('searchQuery') searchQuery: string,
-      @Query('page') page = 1,
-      @Query('limit') limit = 10,
-    ) {
-      return this.productService.searchProduct(searchQuery, page, limit);
-    }
-
-    @Get('filter')
+    @Get('products')
     @ApiOperation({
-      summary: 'Filter products by category, price range, and pagination',
-      description: 'Retrieve products filtered by categoryId, minPrice, maxPrice, with pagination support.',
+      summary: 'Search and filter products with pagination',
+      description: 'Retrieve products based on search query, category, price range, and pagination.',
     })
+    @ApiQuery({ name: 'searchQuery', required: false, description: 'Search term for product names' })
     @ApiQuery({ name: 'categoryId', required: false, description: 'Filter by category ID' })
     @ApiQuery({ name: 'minPrice', required: false, description: 'Minimum price filter', example: 0 })
     @ApiQuery({ name: 'maxPrice', required: false, description: 'Maximum price filter', example: 1000 })
     @ApiQuery({ name: 'page', required: false, description: 'Page number for pagination', example: 1 })
     @ApiQuery({ name: 'limit', required: false, description: 'Number of items per page', example: 10 })
-    async filterProduct(
+    async getProducts(
+      @Query('searchQuery') searchQuery?: string,
       @Query('category') category?: string,
       @Query('minPrice') minPrice?: number,
       @Query('maxPrice') maxPrice?: number,
       @Query('page') page = 1,
       @Query('limit') limit = 10,
     ) {
-      return this.productService.filterProduct(category, minPrice, maxPrice, page, limit);
+      return this.productService.getProducts({ searchQuery, category, minPrice, maxPrice, page, limit });
     }
-  
 
-    @Post(":productId")
+    @Roles(['admin', "seller"])
+    @Post(':productId/toggle-stock')
+    @UseGuards(AuthenticationGuard, AuthorizationGuard)
     @ApiOperation({
-      summary: 'Toggle product stock status',
-      description: 'This endpoint toggles the stock status of a product. If the product is marked as "in stock", it will be updated to "out of stock", and vice versa.',
+      summary: 'Toggle the stock status of a product',
+      description: 'This endpoint allows you to toggle the stock status of a product.',
     })
-    @ApiParam({
-      name: 'productId',
-      description: 'The ID of the product whose stock status you want to toggle.',
-      required: true,
-      example: '64fae2d91b31c8f8a3c2c22a',
-    })
+    @ApiParam({ name: 'productId', description: 'ID of the product to toggle stock status', example: 'product-id' })
     @ApiResponse({
       status: 200,
-      description: 'Product stock status updated successfully.',
+      description: 'Product stock status toggled successfully',
       schema: {
-        example: {
-          message: 'Product stock status updated successfully.',
+        type: 'object',
+        properties: {
+          message: { type: 'string', example: 'Product stock status updated successfully.' },
           product: {
-            _id: '64fae2d91b31c8f8a3c2c22a',
-            name: 'Example Product',
-            price: 50,
-            inStock: false,
+            type: 'object',
+            properties: {
+              id: { type: 'string', example: 'product123' },
+              name: { type: 'string', example: 'Product Name' },
+              description:{ type: 'string', example: 'This is a product description' },
+              price: { type: 'number', example: 49.99 },
+              quantity: { type: 'number', example: 100 },
+              categoryName: { type: 'string', example: 'Electronics' },
+              images: {
+                type: 'array',
+                items: { type: 'string' },
+              },
+              inStock: { type: 'boolean', example: true },
+            },
           },
         },
       },
     })
     @ApiResponse({
-      status: 404,
-      description: 'Product not found.',
+      status: 403,
+      description: 'Forbidden. User does not have the necessary permissions.',
+      schema: {
+      }
     })
-    @ApiResponse({
-      status: 400,
-      description: 'Invalid product ID.',
-    })
-    @ApiResponse({
-      status: 500,
-      description: 'Internal server error.',
-    })    
-    async toggleProductStock(@Param('productId') productId: string) {
+      async toggleProductStock(@Param('productId') productId: string) {
       try {
         // Call the service method to toggle stock status
         const updatedProduct = await this.productService.toggleProductStock(productId);
