@@ -314,10 +314,12 @@ export class ProductService {
       minPrice?: number;
       maxPrice?: number;
       inStock?: boolean;
+      outOfStock?: boolean;
+      sort?: string;
       page: number;
       limit: number;
     }) {
-      const { searchQuery, categories, minPrice, maxPrice, inStock, page, limit } = filters;
+      const { searchQuery, categories, minPrice, maxPrice, inStock, sort, page, limit, outOfStock } = filters;
     
       const skip = (page - 1) * limit;
       const query: any = {};
@@ -341,15 +343,27 @@ export class ProductService {
     
       // Add inStock filter if provided
       if (inStock !== undefined) {
-        query.inStock = true;
+        query.inStock = true; // Handle true or false based on user input
+      }
+      if (outOfStock !== undefined) {
+        query.inStock = false; // Handle true or false based on user input
       }
     
+      // Determine sort order
+      const sortOptions: Record<string, any> = {
+        newest: { createdAt: -1 }, // Sort by newest products
+        alphabetical: { name: 1 }, // Sort by name alphabetically
+        priceLowToHigh: { price: 1 }, // Sort by price low to high
+        priceHighToLow: { price: -1 }, // Sort by price high to low
+      };
+      const sortOrder = sortOptions[sort] || { createdAt: -1 }; // Default to newest if sort is not provided
+    
       try {
-        // Fetch products with pagination, sorted by latest (assuming `createdAt` field exists)
+        // Fetch products with filters, pagination, and sorting
         const products = await this.productModel
           .find(query)
           .populate<{ categoryId: PopulatedCategory }>({ path: 'categoryId', select: 'name' })
-          .sort({ createdAt: -1 })
+          .sort(sortOrder)
           .skip(skip)
           .limit(limit)
           .select('name price description thumbnail categoryId')
@@ -379,7 +393,8 @@ export class ProductService {
         console.error('Error fetching products:', error);
         throw new Error('An error occurred while fetching products.');
       }
-    }    
+    }
+    
 
       
       // async filterProduct(
@@ -536,19 +551,41 @@ export class ProductService {
     //         }
     // }
           
-
-    async getProductsByUser(user: string){
-        const products = await this.productModel.find({owner: user}).populate<{categoryId: PopulatedCategory}>({path:'categoryId', select: 'name'});
-        if(!products || products.length === 0) throw new NotFoundException('No products found for this user!');
-        const productOwner = products.map((product) => ({
-            id: product._id,
-            name: product.name,
-            description: product.description,
-            price: product.price,
-            thumbnail: product.thumbnail,
-            categoryName: product.categoryId?.name || 'No category',
-            categoryId: product.categoryId?._id,
-        }))
-        return productOwner;
+    async getProductsByUser(user: string, page: number, limit: number) {
+      const skip = (page - 1) * limit; // Calculate the number of documents to skip
+    
+      // Fetch products with pagination
+      const products = await this.productModel
+        .find({ owner: user })
+        .populate<{ categoryId: PopulatedCategory }>({ path: 'categoryId', select: 'name' })
+        .skip(skip)
+        .limit(limit);
+    
+      // Count total products for the user
+      const totalProducts = await this.productModel.countDocuments({ owner: user });
+    
+      if (!products || products.length === 0) {
+        throw new NotFoundException('No products found for this user!');
+      }
+    
+      const productOwner = products.map((product) => ({
+        id: product._id,
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        thumbnail: product.thumbnail,
+        categoryName: product.categoryId?.name || 'No category',
+        categoryId: product.categoryId?._id,
+      }));
+    
+      return {
+        pagination: {
+          currentPage: page,
+          totalPages: Math.ceil(totalProducts / limit),
+          totalItems: totalProducts,
+        },
+        result: productOwner,
+      };
     }
+    
 }

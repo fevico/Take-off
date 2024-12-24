@@ -136,7 +136,6 @@ export class OrderService {
       phone: metadata.phone,
       address: metadata.address,
       cartItems: cartData,
-      product: cartData.map((item: any) => item.product),
       paymentStatus: 'pending'
     });
   

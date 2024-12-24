@@ -310,54 +310,73 @@ export class ProductController {
     // }
     
 
-    @Roles(['admin', "seller"])
-    @Get("user-products")
+    @Roles(['admin', 'seller'])
+    @Get('user-products')
     @UseGuards(AuthenticationGuard, AuthorizationGuard)
     @ApiOperation({
-        summary: 'Get all products created by the current user',
-        description: 'This endpoint allows you to retrieve all products created by the current user.',
-      })
+      summary: 'Get all products created by the current user with pagination',
+      description: 'This endpoint allows you to retrieve all products created by the current user with pagination support.',
+    })
+    @ApiQuery({ name: 'page', required: false, type: Number, example: 1, description: 'The page number (default: 1)' })
+    @ApiQuery({ name: 'limit', required: false, type: Number, example: 10, description: 'The number of items per page (default: 10)' })
     @ApiResponse({
-        status: 200,
-        description: 'Get all products created by the current user',
-        schema: {
-          type: 'array',
-          items: {
+      status: 200,
+      description: 'Get all products created by the current user with pagination',
+      schema: {
+        type: 'object',
+        properties: {
+          pagination: {
             type: 'object',
             properties: {
+              currentPage: { type: 'number', example: 1 },
+              totalPages: { type: 'number', example: 5 },
+              totalItems: { type: 'number', example: 50 },
+            },
+          },
+          result: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
                 id: { type: 'string', example: 'product123' },
                 name: { type: 'string', example: 'Product Name' },
                 description: { type: 'string', example: 'This is a product description' },
                 price: { type: 'number', example: 49.99 },
-            }
-          }
-        }
-    })
-    @ApiResponse({
-        status: 403,
-        description: 'Forbidden. User does not have the necessary permissions.',
-        schema: {
-          type: 'object',
-          properties: {
-            message: { type: 'string', example: 'Forbidden' },
-            error: { type: 'string', example: 'Forbidden' },
+              },
+            },
           },
         },
+      },
     })
-    getProductsByUser(@Req() req: Request) {
-      const user = req.user.id
-        return this.productService.getProductsByUser(user);
+    @ApiResponse({
+      status: 403,
+      description: 'Forbidden. User does not have the necessary permissions.',
+      schema: {
+        type: 'object',
+        properties: {
+          message: { type: 'string', example: 'Forbidden' },
+          error: { type: 'string', example: 'Forbidden' },
+        },
+      },
+    })
+    async getProductsByUser(@Req() req: Request, @Query('page') page = 1, @Query('limit') limit = 10) {
+      const user = req.user.id;
+      return this.productService.getProductsByUser(user, +page, +limit); // Ensure `page` and `limit` are numbers
     }
+    
 
     @Get('products')
     @ApiOperation({
-      summary: 'Search and filter products with pagination',
-      description: 'Retrieve products based on search query, category, price range, and pagination.',
+      summary: 'Search, filter, and sort products with pagination',
+      description: 'Retrieve products based on search query, category, price range, inStock status, and sorting with pagination.',
     })
     @ApiQuery({ name: 'searchQuery', required: false, description: 'Search term for product names' })
-    @ApiQuery({ name: 'categories', required: false, description: 'Filter by category ID' })
+    @ApiQuery({ name: 'categories', required: false, description: 'Filter by category IDs' })
     @ApiQuery({ name: 'minPrice', required: false, description: 'Minimum price filter', example: 0 })
     @ApiQuery({ name: 'maxPrice', required: false, description: 'Maximum price filter', example: 1000 })
+    @ApiQuery({ name: 'inStock', required: false, description: 'Filter by in-stock status', example: true })
+    @ApiQuery({ name: 'outOfStock', required: false, description: 'Filter by in-stock status', example: false })
+    @ApiQuery({ name: 'sort', required: false, description: 'Sorting options: newest, alphabetical, priceLowToHigh, priceHighToLow', example: 'newest' })
     @ApiQuery({ name: 'page', required: false, description: 'Page number for pagination', example: 1 })
     @ApiQuery({ name: 'limit', required: false, description: 'Number of items per page', example: 10 })
     async getProducts(
@@ -365,12 +384,15 @@ export class ProductController {
       @Query('categories') categories?: string[],
       @Query('minPrice') minPrice?: number,
       @Query('maxPrice') maxPrice?: number,
+      @Query('inStock') inStock?: boolean,
+      @Query('outOfStock') outOfStock?: boolean,
+      @Query('sort') sort?: string,
       @Query('page') page = 1,
       @Query('limit') limit = 10,
     ) {
-      return this.productService.getProducts({ searchQuery, categories, minPrice, maxPrice, page, limit });
+      return this.productService.getProducts({ searchQuery, categories, minPrice, maxPrice, inStock, outOfStock, sort, page, limit });
     }
-
+    
     @Get('featured')
     @ApiOperation({
         summary: 'Get featured products',

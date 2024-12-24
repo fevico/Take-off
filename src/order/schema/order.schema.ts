@@ -23,9 +23,6 @@ export class Order {
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
   user: Types.ObjectId;
 
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Product', required: true })
-  product: Types.ObjectId;
-
   @Prop({ type: String, required: true })
   email: string;
 
