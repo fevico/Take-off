@@ -113,84 +113,87 @@ export class OrderService {
     reqPaystack.end();
   }
 
-async webhook(req: any, res: any) {
-    const hash = crypto.createHmac('sha512', secret).update(JSON.stringify(req.body)).digest('hex');
-    if (hash == req.headers['x-paystack-signature']) {
-    // Retrieve the request's body
-    console.log(req.body)
-    const event = req.body;
-    // Do something with event  
-          if (event.event === 'charge.success') {
-        const data = event.data; 
-        console.log(hash)
-        console.log(data)
+// async webhook(req: any, res: any) {
+//     const hash = crypto.createHmac('sha512', secret).update(JSON.stringify(req.body)).digest('hex');
+//     if (hash == req.headers['x-paystack-signature']) {
+//     // Retrieve the request's body
+//     console.log(req.body)
+//     const event = req.body;
+//     // Do something with event  
+//           if (event.event === 'charge.success') {
+//         const data = event.data; 
+//         console.log(hash)
+//         console.log(data)
   
-        // Find order by payment reference
-        const order = await this.orderModel.findOne({ paymentReference: data.reference });
-        console.log(order)
-        if (order && order.paymentStatus !== 'SUCCESS') {
-          // Update order status
-          await this.orderModel.findByIdAndUpdate(order._id, {
-            paidAt: new Date(),
-            paymentStatus: 'SUCCESS',
-            paymentReference: data.reference,
-          });
+//         // Find order by payment reference
+//         const order = await this.orderModel.findOne({ paymentReference: data.reference });
+//         console.log(order)
+//         if (order && order.paymentStatus !== 'SUCCESS') {
+//           // Update order status
+//           await this.orderModel.findByIdAndUpdate(order._id, {
+//             paidAt: new Date(),
+//             paymentStatus: 'SUCCESS',
+//             paymentReference: data.reference,
+//           });
   
-          console.log('Payment successful:', data);
+//           console.log('Payment successful:', data);
            
-    }
-    res.send(200);
-          }
-}
-}
+//     }
+//     res.send(200);
+//           }
+// }
+// }
 
 // Make sure you load your Paystack secret key correctly
 
-// async webhook(req: any, res: any) {
-//   try {
-//     const payload = await req.json();
-//     const paystackSignature = req.headers['x-paystack-signature']; 
-//     if (!paystackSignature) {
-//       return res.status(400).json({ message: 'Missing signature' });
-//     }
+async webhook(req: any, res: any) {
+  try {
+    const payload = req.body;
+    const paystackSignature = req.headers['x-paystack-signature'];
+    // console.log(paystackSignature)
+    // if (!paystackSignature) {
+    //   return res.status(400).json({ message: 'Missing signature' });
+    // }
 
-//     const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
-//     const hash = crypto
-//       .createHmac('sha512', PAYSTACK_SECRET_KEY)
-//       .update(JSON.stringify(payload))
-//       .digest('hex'); 
+    const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
+    const hash = crypto
+      .createHmac('sha512', PAYSTACK_SECRET_KEY)
+      .update(JSON.stringify(payload))
+      .digest('hex');
+      console.log(hash)
 
-//     if (hash !== paystackSignature) {
-//       return res.status(400).json({ message: 'Invalid signature' });
-//     }
+    if (hash !== paystackSignature) {
+      return res.status(400).json({ message: 'Invalid signature' });
+    }
 
-//     const event = payload;
-//     const data = event.data;
-//     console.log(data)
+    const event = payload;
+    const data = event.data;
+    console.log(data)
 
-//     if (event.event === 'charge.success') {
-//       const order = await this.orderModel.findOneAndUpdate(
-//         { paymentReference: data.reference, _id: data.metadata?.orderId },
-//         {
-//           paidAt: new Date(),
-//           paymentStatus: 'SUCCESS',
-//         },
-//       );
+    if (event.event === 'charge.success') {
+      const order = await this.orderModel.findOneAndUpdate(
+        { paymentReference: data.reference, _id: data.metadata?.orderId },
+        {
+          paidAt: new Date(),
+          paymentStatus: 'SUCCESS',
+        },
+      );
 
-//       if (!order) {
-//         return res.status(404).json({ message: 'Order not found' });
-//       }
+      if (!order) {
+        return res.status(404).json({ message: 'Order not found' });
+      }
 
-//       return res.status(200).json({ message: 'Payment processed successfully' });
-//     } else if (event.event === 'charge.failed') {
-//       console.error('Payment failed:', data);
-//       return res.status(400).json({ message: 'Payment failed' });
-//     }
-//   } catch (err) {
-//     console.error('Error processing webhook:', err);
-//     return res.status(500).json({ message: 'Server error' });
-//   }
-// } 
+      return res.status(200).json({ message: 'Payment processed successfully' });
+    } else if (event.event === 'charge.failed') {
+      console.error('Payment failed:', data);
+      return res.status(400).json({ message: 'Payment failed' });
+    }
+  } catch (err) {
+    console.error('Error processing webhook:', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+}
+
 
 
 async orderDetailsBySeller(user: string){
