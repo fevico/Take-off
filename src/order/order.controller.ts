@@ -1,9 +1,8 @@
 import { Body, Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { Request } from 'express';
-import { CreateOrderDto } from './dto/order.dto';
 import { AuthenticationGuard } from 'src/guards/Authentication';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthorizationGuard } from 'src/guards/Authorization';
 import { Roles } from 'src/decorator/role.decorator';
 
@@ -28,7 +27,98 @@ export class OrderController {
     }
 
     @Post('webhook')
+    @ApiOperation({
+      summary: 'Paystack webhook handler',
+      description: 'Handles incoming Paystack webhook events.',
+    })
+    @ApiBody({
+      description: 'Paystack webhook payload',
+      schema: {
+        type: 'object',
+        properties: {
+          event: {
+            type: 'string',
+            example: 'charge.success',
+            description: 'Type of event triggered by Paystack.',
+          },
+          data: {
+            type: 'object',
+            properties: {
+              reference: {
+                type: 'string',
+                example: '5a3pu3flo8',
+                description: 'Unique reference for the transaction.',
+              },
+              metadata: {
+                type: 'object',
+                properties: {
+                  orderId: {
+                    type: 'string',
+                    example: '676c5ca69ce6e0ea028563ae',
+                    description: 'Unique ID for the order.',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      required: true,
+    })
+    @ApiResponse({
+      status: 200,
+      description: 'Webhook successfully processed.',
+      schema: {
+        type: 'object',
+        properties: {
+          message: {
+            type: 'string',
+            example: 'Payment processed successfully',
+          },
+        },
+      },
+    })
+    @ApiResponse({
+      status: 400,
+      description: 'Invalid request or signature mismatch.',
+      schema: {
+        type: 'object',
+        properties: {
+          message: {
+            type: 'string',
+            example: 'Invalid signature',
+          },
+        },
+      },
+    })
+    @ApiResponse({
+      status: 404,
+      description: 'Order not found.',
+      schema: {
+        type: 'object',
+        properties: {
+          message: {
+            type: 'string',
+            example: 'Order not found',
+          },
+        },
+      },
+    })
+    @ApiResponse({
+      status: 500,
+      description: 'Server error.',
+      schema: {
+        type: 'object',
+        properties: {
+          message: {
+            type: 'string',
+            example: 'Server error',
+          },
+        },
+      },
+    })
     async webhook(@Body() body: any, @Res() res: any, @Req() req: any) {
-        return this.orderService.webhook(req, res); 
-    } 
+      return this.orderService.webhook(req, res);
+    }
+  
 }

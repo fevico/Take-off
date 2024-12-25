@@ -79,13 +79,12 @@ export class OrderService {
             savedOrder.paymentReference = parsedData.data.reference;
             await savedOrder.save();
   
-            console.log(data) 
+            console.log("data", data) 
             // Respond to the client with Paystack authorization URL and order ID
             return res.json({
               message: 'Payment initialized successfully',
-              authorization_url: parsedData.data.authorization_url,
               orderId: savedOrder._id,
-              // refrence: data.refrence
+              data: parsedData.data
             });
           } else {
             // Handle failure to initialize payment   
@@ -174,9 +173,9 @@ async webhook(req: any, res: any) {
       const order = await this.orderModel.findOneAndUpdate(
         { paymentReference: data.reference, _id: data.metadata?.orderId },
         {
-          paidAt: new Date(),
-          paymentStatus: 'SUCCESS',
-        },
+          paidAt: new Date().toISOString().split('T')[0],
+          paymentStatus: 'Success',
+        }, 
       );
 
       if (!order) {
