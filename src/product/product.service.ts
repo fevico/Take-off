@@ -227,6 +227,8 @@ export class ProductService {
                     quantity: product.quantity,
                     images: product.images,
                     thumbnail: product.thumbnail,
+                    inStock: product.inStock,
+                    categoryId: product.categoryId,
                     categoryName: product.categoryId ? product.categoryId.name : 'No category', // Handle missing categoryId
                 }
             } 
