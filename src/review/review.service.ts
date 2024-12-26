@@ -7,6 +7,9 @@ import { Product } from 'src/product/schema/product.schema';
 
 interface PopulatedUser{
     name: string;
+    avatar: {
+        url: string;
+    }
 }
 @Injectable()
 
@@ -60,6 +63,7 @@ export class ReviewService {
             content: review.content,
             rating: review.rating,
             user: review.user ? review.user.name : "Anonymous",
+            image: review.user ? review.user.avatar.url : null,
         }));
     
         // Get total count for pagination metadata

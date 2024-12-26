@@ -55,7 +55,7 @@ images:{url: string, id: string}[]
   @Prop({type: String, required: true })
   thumbnail: string;
 
-  @Prop({type: Number, required: true})
+  @Prop({type: Number, required: false, default: 0})
   averageRating: number;
 
 }

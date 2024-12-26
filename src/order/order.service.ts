@@ -216,6 +216,7 @@ async orderDetailsByReference(reference: string) {
       name: item.product.name,
       quantity: item.quantity,
       thumbnail: item.product.thumbnail,
+      totalPrice: item.totalPrice 
     }));
 
     // Construct the response object
