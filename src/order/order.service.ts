@@ -1,16 +1,40 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Type } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Order } from './schema/order.schema';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import * as https from 'https';
 import * as crypto from 'crypto';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
-const secret = process.env.PAYSTACK_SECRET_KEY;
+
+export interface populatedProduct {
+  name: string
+  _id: Types.ObjectId;
+  thumbnail: string;
+}
+
+export interface populatedUser {
+  name: string
+  _id: string
+}
+type Product = {
+  _id: string;
+  name: string;
+  thumbnail: string;
+};
+
+type CartItem = {
+  product: Product;
+  quantity: number;
+};
+
 @Injectable()
 export class OrderService {
-  constructor(@InjectModel(Order.name) private orderModel: Model<Order>) {}
+  constructor(
+    @InjectModel(Order.name) private orderModel: Model<Order>,
+    // @InjectModel(Product.name) private productModel: Model<Product>,
+) {}
 
   async createPayment(body: any, res: any, userId: string) {
     const { first_name, last_name, amount, email, metadata } = body;
@@ -47,7 +71,7 @@ export class OrderService {
       amount,
       email,
       metadata,
-      callback_url: 'http://localhost:5173/', // Update to your frontend callback URL
+      callback_url: '${req.headers.origin}/order-recieved',
     });
   
     const options = {
@@ -149,10 +173,10 @@ async webhook(req: any, res: any) {
   try {
     const payload = req.body;
     const paystackSignature = req.headers['x-paystack-signature'];
-    // console.log(paystackSignature)
-    // if (!paystackSignature) {
-    //   return res.status(400).json({ message: 'Missing signature' });
-    // }
+    console.log(paystackSignature)
+    if (!paystackSignature) {
+      return res.status(400).json({ message: 'Missing signature' });
+    }
 
     const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
     const hash = crypto
@@ -192,6 +216,81 @@ async webhook(req: any, res: any) {
     return res.status(500).json({ message: 'Server error' });
   }
 }
+
+// async orderDetailsByReference(reference: string) {
+//   const order = await this.orderModel
+//     .findOne({ paymentReference: reference })
+//     .populate<{cartItems: {product: Types.ObjectId, quantity: number}[]}>({
+//       path: 'cartItems.product', // Populate the product field in cartItems
+//       select: 'name',
+//     })
+//     .populate<{user: populatedUser}>({
+//       path: 'user', // Populate the user field
+//       select: 'name', // Select only the name field from the user
+//     });
+
+//   if (order) {
+//     const productDetails = order.cartItems.map(({product, quantity}) => ({
+//       id: product._id, // Use the populated product's ID
+//       name: product.name || "", // Use the populated product's name
+//       quantity: quantity,
+//       thumbnail: product.thumbnail,
+//     }));
+
+//     return {
+//       id: order._id,
+//       user: {
+//         id: order.user._id,
+//         name: order.user.name, // Use the populated user's name
+//       },
+//       email: order.email,
+//       address: order.address,
+//       paymentReference: order.paymentReference,
+//       paymentStatus: order.paymentStatus,
+//       deliveryStatus: order.deliveryStatus,
+//       price: order.price,
+//       paidAt: order.paidAt,
+//       // createdAt: order.createdAt,
+//       // updatedAt: order.updatedAt,
+//       cartItems: productDetails, // Include the processed product details
+//     };
+//   }
+
+//   throw new Error('Order not found');
+// }
+
+async orderDetailsByReference(reference: string) {
+  const order = await this.orderModel
+    .findOne({ paymentReference: reference })
+    .populate<{ user: populatedUser }>({
+      path: 'user', 
+      select: 'name',
+    })
+    .populate<{ "cartItems.product": populatedProduct }>("cartItems.product")
+
+    const productDetails = order.cartItems.map((item: any) => ({
+      id: item.product._id,
+      name: item.product.name,
+      quantity: item.quantity,
+      thumbnail: item.product.thumbnail,
+    }));
+
+    // Construct the response object
+    return {
+      id: order._id,
+      user: order.user.name || "No Name",
+      email: order.email,
+      address: order.address,
+      paymentReference: order.paymentReference,
+      paymentStatus: order.paymentStatus,
+      deliveryStatus: order.deliveryStatus,
+      price: order.totalPrice,
+      paidAt: order.paidAt.toISOString().split("T")[0],
+      cartItems: productDetails,
+    };
+  }
+
+  // throw new Error('Order not found');
 
 
 

@@ -27,7 +27,7 @@ export class Order {
   email: string;
 
   @Prop({ type: Number, required: true })
-  price: number;
+  totalPrice: number;
 
   @Prop({ type: String, required: false })
   paymentReference: string;

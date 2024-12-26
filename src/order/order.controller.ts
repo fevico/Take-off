@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { Request } from 'express';
 import { AuthenticationGuard } from 'src/guards/Authentication';
@@ -24,6 +24,13 @@ export class OrderController {
     async orderDetailsBySeller(@Req() req: Request){
         const user = req.user.id
         return this.orderService.orderDetailsBySeller(user);
+    }
+
+    @Get('by-reference/:reference')
+    @UseGuards(AuthenticationGuard)
+    async orderDetailsByReference(@Param("reference") reference: string, @Body() body: any, @Req() req: Request){
+        const user = req.user.id
+        return this.orderService.orderDetailsByReference(reference);
     }
 
     @Post('webhook')

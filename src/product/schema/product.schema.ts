@@ -1,6 +1,17 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { Schema as MongooseSchema } from 'mongoose';
+import { Schema as MongooseSchema, ObjectId } from 'mongoose';
 
+// export interface BookDoc{
+//   _id?: ObjectId;
+//   title: string;
+//   slug: string;
+//   description: string;
+//   language: string;
+//   publishedAt: Date;
+//   publicationName: string;
+//   thumbnail: string;
+//   averageRating?: number;
+// }
 
 @Schema({timestamps: true})
 export class Product {
