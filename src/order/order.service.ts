@@ -33,7 +33,6 @@ type CartItem = {
 export class OrderService {
   constructor(
     @InjectModel(Order.name) private orderModel: Model<Order>,
-    // @InjectModel(Product.name) private productModel: Model<Product>,
 ) {}
 
   async createPayment(body: any, res: any, userId: string) {
@@ -45,13 +44,12 @@ export class OrderService {
       product: item.product,
       quantity: item.quantity, 
     })); 
-    console.log(cartData)
   
     // 1. Create an order in the database
     const newOrder = new this.orderModel({
       email,
       user: userId,
-      price: metadata.price,
+      totalPrice: metadata.totalPrice,
       name: metadata.name,
       note: metadata.note,
       phone: metadata.phone,
@@ -136,39 +134,6 @@ export class OrderService {
     reqPaystack.end();
   }
 
-// async webhook(req: any, res: any) {
-//     const hash = crypto.createHmac('sha512', secret).update(JSON.stringify(req.body)).digest('hex');
-//     if (hash == req.headers['x-paystack-signature']) {
-//     // Retrieve the request's body
-//     console.log(req.body)
-//     const event = req.body;
-//     // Do something with event  
-//           if (event.event === 'charge.success') {
-//         const data = event.data; 
-//         console.log(hash)
-//         console.log(data)
-  
-//         // Find order by payment reference
-//         const order = await this.orderModel.findOne({ paymentReference: data.reference });
-//         console.log(order)
-//         if (order && order.paymentStatus !== 'SUCCESS') {
-//           // Update order status
-//           await this.orderModel.findByIdAndUpdate(order._id, {
-//             paidAt: new Date(),
-//             paymentStatus: 'SUCCESS',
-//             paymentReference: data.reference,
-//           });
-  
-//           console.log('Payment successful:', data);
-           
-//     }
-//     res.send(200);
-//           }
-// }
-// }
-
-// Make sure you load your Paystack secret key correctly
-
 async webhook(req: any, res: any) {
   try {
     const payload = req.body;
@@ -217,48 +182,6 @@ async webhook(req: any, res: any) {
   }
 }
 
-// async orderDetailsByReference(reference: string) {
-//   const order = await this.orderModel
-//     .findOne({ paymentReference: reference })
-//     .populate<{cartItems: {product: Types.ObjectId, quantity: number}[]}>({
-//       path: 'cartItems.product', // Populate the product field in cartItems
-//       select: 'name',
-//     })
-//     .populate<{user: populatedUser}>({
-//       path: 'user', // Populate the user field
-//       select: 'name', // Select only the name field from the user
-//     });
-
-//   if (order) {
-//     const productDetails = order.cartItems.map(({product, quantity}) => ({
-//       id: product._id, // Use the populated product's ID
-//       name: product.name || "", // Use the populated product's name
-//       quantity: quantity,
-//       thumbnail: product.thumbnail,
-//     }));
-
-//     return {
-//       id: order._id,
-//       user: {
-//         id: order.user._id,
-//         name: order.user.name, // Use the populated user's name
-//       },
-//       email: order.email,
-//       address: order.address,
-//       paymentReference: order.paymentReference,
-//       paymentStatus: order.paymentStatus,
-//       deliveryStatus: order.deliveryStatus,
-//       price: order.price,
-//       paidAt: order.paidAt,
-//       // createdAt: order.createdAt,
-//       // updatedAt: order.updatedAt,
-//       cartItems: productDetails, // Include the processed product details
-//     };
-//   }
-
-//   throw new Error('Order not found');
-// }
-
 async orderDetailsByReference(reference: string) {
   const order = await this.orderModel
     .findOne({ paymentReference: reference })
@@ -289,9 +212,6 @@ async orderDetailsByReference(reference: string) {
       cartItems: productDetails,
     };
   }
-
-  // throw new Error('Order not found');
-
 
 
 async orderDetailsBySeller(user: string){
