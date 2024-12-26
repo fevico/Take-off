@@ -44,7 +44,7 @@ export class Order {
   @Prop({ type: String, required: false })
   note: string;
 
-  @Prop({ type: String, required: true, default: 'pending' })
+  @Prop({ type: String, enum:['paid', 'unpaid'], default: 'unpaid' })
   paymentStatus: string;
 
   @Prop({ type: Date })

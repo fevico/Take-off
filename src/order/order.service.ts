@@ -5,6 +5,7 @@ import { Model, Types } from 'mongoose';
 import * as https from 'https';
 import * as crypto from 'crypto';
 import * as dotenv from 'dotenv';
+import { User } from 'src/auth/schema/auth.schema';
 dotenv.config();
 
 
@@ -33,6 +34,7 @@ type CartItem = {
 export class OrderService {
   constructor(
     @InjectModel(Order.name) private orderModel: Model<Order>,
+    @InjectModel(User.name) private userModel: Model<User>,
 ) {}
 
   async createPayment(body: any, res: any, userId: string) {
@@ -55,7 +57,6 @@ export class OrderService {
       phone: metadata.phone,
       address: metadata.address,
       cartItems: cartData,
-      paymentStatus: 'pending'
     });
   
     const savedOrder = await newOrder.save();
@@ -69,7 +70,7 @@ export class OrderService {
       amount,
       email,
       metadata,
-      callback_url: '${req.headers.origin}/order-recieved',
+      callback_url: 'http://localhost:3000/order-recieved',
     });
   
     const options = {
@@ -79,7 +80,7 @@ export class OrderService {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`, // Ensure your Paystack secret key is properly set in the .env file
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json',  
       },
     };
   
@@ -138,7 +139,6 @@ async webhook(req: any, res: any) {
   try {
     const payload = req.body;
     const paystackSignature = req.headers['x-paystack-signature'];
-    console.log(paystackSignature)
     if (!paystackSignature) {
       return res.status(400).json({ message: 'Missing signature' });
     }
@@ -148,28 +148,47 @@ async webhook(req: any, res: any) {
       .createHmac('sha512', PAYSTACK_SECRET_KEY)
       .update(JSON.stringify(payload))
       .digest('hex');
-      console.log(hash)
 
+      console.log(hash)
     if (hash !== paystackSignature) {
       return res.status(400).json({ message: 'Invalid signature' });
     }
 
     const event = payload;
     const data = event.data;
-    console.log(data)
 
     if (event.event === 'charge.success') {
       const order = await this.orderModel.findOneAndUpdate(
         { paymentReference: data.reference, _id: data.metadata?.orderId },
         {
           paidAt: new Date().toISOString().split('T')[0],
-          paymentStatus: 'Success',
-        }, 
+          paymentStatus: 'paid',
+        },
+        { new: true } // Ensure updated document is returned
       );
 
       if (!order) {
         return res.status(404).json({ message: 'Order not found' });
       }
+
+      // Retrieve the user associated with the order
+      const user = await this.userModel.findById(order.user);
+
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Extract product IDs from cartItems
+      const productIds = order.cartItems.map((item) => item.product.toString());
+
+      // Add product IDs to the user's products array without duplicates
+      user.products = Array.from(
+        new Set([
+          ...user.products.map((id) => new Types.ObjectId(id)), // Ensure existing IDs are ObjectId
+          ...productIds.map((id) => new Types.ObjectId(id)),   // Convert productIds to ObjectId
+        ])
+      );
+      await user.save();
 
       return res.status(200).json({ message: 'Payment processed successfully' });
     } else if (event.event === 'charge.failed') {
@@ -181,6 +200,7 @@ async webhook(req: any, res: any) {
     return res.status(500).json({ message: 'Server error' });
   }
 }
+
 
 async orderDetailsByReference(reference: string) {
   const order = await this.orderModel
