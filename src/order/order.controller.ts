@@ -26,13 +26,24 @@ export class OrderController {
         return this.orderService.orderDetailsBySeller(user);
     }
 
-    @Get('by-reference/:reference')
-    @UseGuards(AuthenticationGuard)
-    async orderDetailsByReference(@Param("reference") reference: string, @Body() body: any, @Req() req: Request){
-        const user = req.user.id
-        return this.orderService.orderDetailsByReference(reference);
+    @Get('/buyer')
+    @ApiOperation({ summary: 'Get orders by buyer ID' })
+    @ApiResponse({ status: 200, description: 'List of orders belonging to the buyer' })
+    @ApiResponse({ status: 404, description: 'Buyer not found' })
+    async getOrdersByBuyer(@Req() req: Request) {
+        const buyerId = req.user.id;
+      return this.orderService.getOrdersByBuyer(buyerId);
     }
 
+    @Get('/seller/:sellerId')
+    @ApiOperation({ summary: 'Get orders by seller ID' })
+    @ApiResponse({ status: 200, description: 'List of orders belonging to the seller' })
+    @ApiResponse({ status: 404, description: 'Seller not found' })
+    async getOrdersBySeller(@Req() req: Request) {
+        const sellerId = req.user.id;
+      return this.orderService.getOrdersBySeller(sellerId);
+    }
+  
     @Post('webhook')
     @ApiOperation({
       summary: 'Paystack webhook handler',
@@ -126,6 +137,14 @@ export class OrderController {
     })
     async webhook(@Body() body: any, @Res() res: any, @Req() req: any) {
       return this.orderService.webhook(req, res);
+    }
+
+    
+    @Get('by-reference/:reference')
+    @UseGuards(AuthenticationGuard)
+    async orderDetailsByReference(@Param("reference") reference: string, @Body() body: any, @Req() req: Request){
+        const user = req.user.id
+        return this.orderService.orderDetailsByReference(reference);
     }
   
 }

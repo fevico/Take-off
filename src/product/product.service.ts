@@ -229,6 +229,7 @@ export class ProductService {
                     thumbnail: product.thumbnail,
                     inStock: product.inStock,
                     categoryId: product.categoryId,
+                    createdAt: product.createdAt,
                     categoryName: product.categoryId ? product.categoryId.name : 'No category', // Handle missing categoryId
                 }
             } 

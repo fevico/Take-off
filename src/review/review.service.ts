@@ -58,6 +58,8 @@ export class ReviewService {
             .limit(limit)
             .exec();
     
+            const reviewCount = await this.reviewModel.countDocuments({ product: productId });
+
         // Map reviews for response
         const mappedReviews = reviews.map((review) => ({
             content: review.content,
@@ -71,6 +73,7 @@ export class ReviewService {
     
         return {
             reviews: mappedReviews,
+            reviewCount,
             pagination: {
                 currentPage: page,
                 totalPages: Math.ceil(totalReviews / limit),
@@ -78,5 +81,27 @@ export class ReviewService {
             },
         };
     }
+
+    async getReviewWithStats(user: string, product: string) {
+        if (!isValidObjectId(product)) {
+            throw new UnprocessableEntityException("Invalid product ID");
+        }
+    
+        // Get the user's review
+        const review = await this.reviewModel.findOne({ product, user });
+        if (!review) {
+            throw new UnprocessableEntityException("No review found for this user!");
+        }
+    
+        // Get the total number of reviews for the product
+        const reviewCount = await this.reviewModel.countDocuments({ product });
+    
+        return {
+            content: review.content,
+            rating: review.rating,
+            reviewCount, // Include the count of reviews
+        };
+    }
+    
     
 }

@@ -1,30 +1,22 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { Schema as MongooseSchema, Types } from 'mongoose';
+import { Schema as MongooseSchema, ObjectId, Types } from 'mongoose';
 
-// Define CartItem as a sub-schema
-@Schema()
-export class CartItem {
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Product', required: true })
-  product: Types.ObjectId;
-
-  @Prop({ type: Number, required: true })
-  quantity: number;
-}
-
-// Create the CartItem schema first
-const CartItemSchema = SchemaFactory.createForClass(CartItem);
-
-// Main Order schema
 @Schema({ timestamps: true })
 export class Order {
-  @Prop({ type: [CartItemSchema], required: true })
-  cartItems: CartItem[];
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Product', required: true })
+  product: Types.ObjectId; // Single product per order
 
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
-  user: Types.ObjectId;
+  buyerId: Types.ObjectId;
+
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
+  sellerId: Types.ObjectId; // Track the seller for this order
 
   @Prop({ type: String, required: true })
   email: string;
+
+  @Prop({ type: Number, required: true })
+  quantity: number;
 
   @Prop({ type: Number, required: true })
   totalPrice: number;
@@ -44,7 +36,7 @@ export class Order {
   @Prop({ type: String, required: false })
   note: string;
 
-  @Prop({ type: String, enum:['paid', 'unpaid'], default: 'unpaid' })
+  @Prop({ type: String, enum: ['paid', 'unpaid'], default: 'unpaid' })
   paymentStatus: string;
 
   @Prop({ type: Date })
@@ -57,5 +49,4 @@ export class Order {
   orderNumber: string;
 }
 
-// Create the Order schema after CartItemSchema
 export const OrderSchema = SchemaFactory.createForClass(Order);

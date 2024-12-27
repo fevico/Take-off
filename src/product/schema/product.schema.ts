@@ -58,6 +58,9 @@ images:{url: string, id: string}[]
   @Prop({type: Number, required: false, default: 0})
   averageRating: number;
 
+  @Prop({type: Date, default : Date.now})
+  createdAt: Date;
+
 }
 
 export const productSchema = SchemaFactory.createForClass(Product);
