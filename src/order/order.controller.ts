@@ -27,6 +27,7 @@ export class OrderController {
     }
 
     @Get('/buyer')
+    @UseGuards(AuthenticationGuard)
     @ApiOperation({ summary: 'Get orders by buyer ID' })
     @ApiResponse({ status: 200, description: 'List of orders belonging to the buyer' })
     @ApiResponse({ status: 404, description: 'Buyer not found' })
@@ -35,7 +36,8 @@ export class OrderController {
       return this.orderService.getOrdersByBuyer(buyerId);
     }
 
-    @Get('/seller/:sellerId')
+    @Get('/seller')
+    @UseGuards(AuthenticationGuard)
     @ApiOperation({ summary: 'Get orders by seller ID' })
     @ApiResponse({ status: 200, description: 'List of orders belonging to the seller' })
     @ApiResponse({ status: 404, description: 'Seller not found' })
