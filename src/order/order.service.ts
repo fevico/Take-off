@@ -150,34 +150,39 @@ export class OrderService {
       acc[sellerId].push(item);
       return acc;
     }, {});
-  
+    
     // Create orders for each seller group
     const orders = [];
     for (const sellerId in groupedCart) {
       const sellerItems = groupedCart[sellerId];
-      const totalPrice = sellerItems.reduce((sum: number, item: any) => sum + item.quantity * item.product.price, 0);
-  
-      // Create individual orders for each seller
-      const newOrder = new this.orderModel({
-        email,
-        buyerId: userId,
-        sellerId,
-        product: sellerItems[0].product._id, // Each order corresponds to one product
-        quantity: sellerItems[0].quantity,
-        totalPrice,
-        phone,
-        address,
-        note,
-        status: 'pending',
-        paymentStatus: 'unpaid',
-      });
-  
-      const savedOrder = await newOrder.save();
-      orders.push(savedOrder);
+    
+      // Create individual orders for each product in the seller's group
+      for (const item of sellerItems) {
+        const { product, quantity } = item;
+        const totalPrice = quantity * product.price;
+    
+        // Create an individual order for the product
+        const newOrder = new this.orderModel({
+          email,
+          buyerId: userId,
+          sellerId,
+          product: product._id,
+          quantity,
+          totalPrice,
+          phone,
+          address,
+          note,
+          status: 'pending',
+          paymentStatus: 'unpaid',
+        });
+    
+        const savedOrder = await newOrder.save();
+        orders.push(savedOrder);
+      }
     }
   
     // Attach order IDs to the metadata
-    metadata.orderIds = orders.map(order => order._id);
+    metadata.orderIds = orders.map((order) => order._id);
   
     // Prepare Paystack payment initialization parameters
     const params = JSON.stringify({
@@ -200,11 +205,9 @@ export class OrderService {
       },
     };
   
-    // Initialize payment with Paystack
     const reqPaystack = https.request(options, async (respaystack) => {
       let data = '';
   
-      // Collect response data
       respaystack.on('data', (chunk) => {
         data += chunk;
       });
@@ -214,22 +217,20 @@ export class OrderService {
           const parsedData = JSON.parse(data);
   
           if (parsedData.status) {
-            // Update orders with payment reference
+            // Update all orders with the same payment reference
             await Promise.all(
-              orders.map(order => {
+              orders.map((order) => {
                 order.paymentReference = parsedData.data.reference;
                 return order.save();
               })
             );
   
-            // Respond to the client with Paystack authorization URL and order IDs
             return res.json({
               message: 'Payment initialized successfully',
-              orderIds: orders.map(order => order._id),
+              orderIds: orders.map((order) => order._id),
               data: parsedData.data,
             });
           } else {
-            // Handle failure to initialize payment
             console.error('Payment initialization failed:', parsedData.message);
             return res.status(400).json({
               message: 'Failed to initialize payment',
@@ -243,17 +244,16 @@ export class OrderService {
       });
     });
   
-    // Handle errors during the HTTP request
     reqPaystack.on('error', (error) => {
       console.error('Error with Paystack request:', error);
       return res.status(500).json({ message: 'Internal Server Error', error });
     });
   
-    // Write the request parameters and end the request
     reqPaystack.write(params);
     reqPaystack.end();
   }
   
+   
 
   async webhook(req: any, res: any) {
     try {
@@ -269,6 +269,7 @@ export class OrderService {
         .update(JSON.stringify(payload))
         .digest('hex');
   
+        console.log(hash)
       if (hash !== paystackSignature) {
         return res.status(400).json({ message: 'Invalid signature' });
       }
@@ -277,20 +278,41 @@ export class OrderService {
       const data = event.data;
   
       if (event.event === 'charge.success') {
-        // Update the order based on paymentReference and metadata
-        const order = await this.orderModel.findOneAndUpdate(
-          { paymentReference: data.reference },
+        // Find all orders with the same paymentReference
+        const orders = await this.orderModel.find({
+          paymentReference: data.reference,
+        });
+  
+        if (!orders.length) {
+          return res.status(404).json({ message: 'Orders not found' });
+        }
+  
+        // Update payment details and order status for each order
+        const productIds = [];
+        for (const order of orders) {
+          order.paidAt = new Date();
+          order.paymentStatus = 'paid';
+          order.status = 'confirmed';
+          await order.save();
+  
+          if (order.product) {
+            // Accumulate product IDs (single or multiple)
+            if (Array.isArray(order.product)) {
+              productIds.push(...order.product);
+            } else {
+              productIds.push(order.product);
+            }
+          }
+        }
+  
+        // Add the products to the user's purchasedProducts field
+        await this.userModel.findByIdAndUpdate(
+          orders[0].buyerId, // Assuming all orders have the same buyerId for a given reference
           {
-            paidAt: new Date(),
-            paymentStatus: 'paid',
-            status: 'confirmed', // Update status to confirmed
+            $addToSet: { products: { $each: productIds } }, // Add unique products
           },
           { new: true }
         );
-  
-        if (!order) {
-          return res.status(404).json({ message: 'Order not found' });
-        }
   
         return res.status(200).json({ message: 'Payment processed successfully' });
       } else if (event.event === 'charge.failed') {
@@ -304,25 +326,23 @@ export class OrderService {
   }
   
 
-
   async orderDetailsByReference(reference: string) {
-    const order = await this.orderModel
-      .findOne({ paymentReference: reference })
-      .populate<{buyerId: populatedUser}>('buyerId', 'name email')
-      .populate<{sellerId: populatedUser}>('sellerId', 'name email')
-      .populate<{product: populatedProduct}>('product', 'name thumbnail price');
+    const orders = await this.orderModel
+      .find({ paymentReference: reference }) // Use find() to fetch all matching orders
+      .populate<{ buyerId: populatedUser }>('buyerId', 'name email')
+      .populate<{ sellerId: populatedUser }>('sellerId', 'name email')
+      .populate<{ product: populatedProduct }>('product', 'name thumbnail price');
   
-    if (!order) {
-      throw new Error('Order not found');
+    if (!orders.length) {
+      throw new Error('No orders found with the given reference');
     }
   
-    // Construct the response object
-    return {
+    // Construct the response for multiple orders
+    return orders.map(order => ({
       id: order._id,
       orderNumber: order.orderNumber || 'N/A',
       buyer: {
-        // id: order.buyerId._id,
-        name: order.buyerId.name,
+        name: order.buyerId.name || 'N/A',
         email: order.buyerId.email,
       },
       seller: {
@@ -346,7 +366,7 @@ export class OrderService {
       status: order.status,
       deliveryStatus: order.deliveryStatus,
       paidAt: order.paidAt ? order.paidAt.toISOString().split('T')[0] : 'N/A',
-    };
+    }));
   }
   
   async getOrdersByBuyer(buyerId: string) {
@@ -410,7 +430,6 @@ export class OrderService {
       paidAt: order.paidAt ? order.paidAt.toISOString().split('T')[0] : 'N/A',
     }));
   }
-  
 
 async orderDetailsBySeller(user: string){
 
