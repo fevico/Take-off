@@ -1,8 +1,8 @@
-import { Body, Controller, Get, Param, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { Request } from 'express';
 import { AuthenticationGuard } from 'src/guards/Authentication';
-import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthorizationGuard } from 'src/guards/Authorization';
 import { Roles } from 'src/decorator/role.decorator';
 
@@ -18,13 +18,13 @@ export class OrderController {
         return this.orderService.createPayment(body, res, user);
     }
 
-    @Roles(['admin', 'seller'])
-    @Get('details')
-    @UseGuards(AuthenticationGuard, AuthorizationGuard)
-    async orderDetailsBySeller(@Req() req: Request){
-        const user = req.user.id
-        return this.orderService.orderDetailsBySeller(user);
-    }
+    // @Roles(['admin', 'seller'])
+    // @Get('details')
+    // @UseGuards(AuthenticationGuard, AuthorizationGuard)
+    // async orderDetailsBySeller(@Req() req: Request){
+    //     const user = req.user.id
+    //     return this.orderService.orderDetailsBySeller(user);
+    // }
 
     @Get('/buyer')
     @UseGuards(AuthenticationGuard)
@@ -144,9 +144,73 @@ export class OrderController {
     
     @Get('by-reference/:reference')
     @UseGuards(AuthenticationGuard)
-    async orderDetailsByReference(@Param("reference") reference: string, @Body() body: any, @Req() req: Request){
-        const user = req.user.id
-        return this.orderService.orderDetailsByReference(reference);
+    @ApiOperation({ summary: 'Get order details by reference' })
+    @ApiParam({
+      name: 'reference',
+      description: 'The reference ID of the order',
+      required: true,
+      example: 'REF12345678',
+    })
+    @ApiResponse({ status: 200, description: 'Order details retrieved successfully' })
+    @ApiResponse({ status: 404, description: 'Order not found' })
+    async orderDetailsByReference(
+      @Param('reference') reference: string,
+      @Req() req: Request
+    ) {
+      const user = req.user.id;
+      return this.orderService.orderDetailsByReference(reference);
     }
+  
+    @Patch('mark-order-status/:id')
+    @UseGuards(AuthenticationGuard)
+    @ApiOperation({ summary: 'Update the status of an order' })
+    @ApiParam({
+      name: 'id',
+      description: 'The ID of the order to update',
+      required: true,
+      example: 'ORDER12345',
+    })
+    @ApiBody({
+      description: 'The new status for the order',
+      schema: {
+        type: 'object',
+        properties: {
+          action: {
+            type: 'string',
+            description: 'The new status of the order',
+            example: 'confirmed',
+          },
+        },
+      },
+    })
+    @ApiResponse({ status: 200, description: 'Order status updated successfully' })
+    @ApiResponse({ status: 404, description: 'Order not found' })
+    async markOrderStatus(
+      @Param('id') id: string,
+      @Body() body: { status: string },
+      @Req() req: Request
+    ) {
+      const user = req.user.id;
+      return this.orderService.markOrderStatus(user, id, body.status);
+    }
+  
+    @Get(':orderId')
+    @UseGuards(AuthenticationGuard)
+    @ApiOperation({ summary: 'Get order details by order ID' })
+    @ApiParam({
+      name: 'orderId',
+      description: 'The ID of the order to retrieve',
+      required: true,
+      example: 'ORDER12345',
+    })
+    @ApiResponse({ status: 200, description: 'Order details retrieved successfully' })
+    @ApiResponse({ status: 404, description: 'Order not found' })
+    async getOrder(
+      @Param('orderId') orderId: string,
+      @Req() req: Request
+    ) {
+      const user = req.user.id;
+      return this.orderService.getOrderById(user, orderId);
+    }  
   
 }

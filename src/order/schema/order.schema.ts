@@ -42,7 +42,7 @@ export class Order {
   @Prop({ type: Date })
   paidAt: Date;
 
-  @Prop({ type: String, enum: ['pending', 'processing', 'shipped', 'delivered'], default: 'pending' })
+  @Prop({ type: String, enum: ['pending', 'accepted', 'shipped', 'delivered'], default: 'pending' })
   deliveryStatus: string;
 
   @Prop({ type: String, required: false })
