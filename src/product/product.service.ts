@@ -201,6 +201,7 @@ export class ProductService {
         quantity: product.quantity,
         images: product.images,
         thumbnail: product.thumbnail,
+        seller: product.owner,
         categoryName: product.categoryId ? product.categoryId.name : 'No category', // Handle missing categoryId
       }));
     
@@ -230,6 +231,7 @@ export class ProductService {
                     inStock: product.inStock,
                     categoryId: product.categoryId,
                     createdAt: product.createdAt,
+                    seller: product.owner,
                     categoryName: product.categoryId ? product.categoryId.name : 'No category', // Handle missing categoryId
                 }
             } 
