@@ -266,52 +266,6 @@ export class ProductService {
             throw new UnprocessableEntityException(error.message);
         }
     }
-    
-    // async searchProduct(searchQuery: string, page: number, limit: number) {
-    //     const skip = (page - 1) * limit;
-      
-    //     // Build the search query using a regular expression
-    //     const query = {
-    //       name: { $regex: searchQuery, $options: 'i' },
-    //     };
-      
-    //     try {
-    //       // Fetch matching products with pagination and populate `categoryId`
-    //       const products = await this.productModel
-    //         .find(query)
-    //         .populate<{categoryId: PopulatedCategory}>({ path: 'categoryId', select: 'name' })
-    //         .skip(skip)
-    //         .limit(limit)
-    //         .select('name price description thumbnail categoryId')
-    //         .exec();
-      
-    //       // Count total matching documents for pagination metadata
-    //       const totalProducts = await this.productModel.countDocuments(query);
-          
-    //       const result = products.map((product) => ({
-    //         id: product._id,
-    //         name: product.name,
-    //         description: product.description,
-    //         price: product.price,
-    //         quantity: product.quantity,
-    //         thumbnail: product.thumbnail,
-    //         categoryName: product.categoryId ? product.categoryId.name : 'No category',
-    //       }))
-      
-    //       return {
-    //         pagination: {
-    //             currentPage: page,
-    //             totalPages: Math.ceil(totalProducts / limit),
-    //             totalItems: totalProducts,
-    //           },
-    //         result,
-
-    //       };
-    //     } catch (error) {
-    //       console.error('Error searching products:', error);
-    //       throw new Error('An error occurred while searching for products.');
-    //     }
-    //   }
 
     async getProducts(filters: {
       searchQuery?: string;
@@ -371,7 +325,7 @@ export class ProductService {
           .sort(sortOrder)
           .skip(skip)
           .limit(limit)
-          .select('name price description thumbnail categoryId')
+          .select('name price description thumbnail owner categoryId')
           .exec();
     
         // Count total matching documents for pagination metadata
@@ -382,6 +336,7 @@ export class ProductService {
           name: product.name,
           price: product.price,
           thumbnail: product.thumbnail,
+          seller: product.owner,
           categoryName: product.categoryId ? product.categoryId.name : 'No category',
           categoryId: product.categoryId ? product.categoryId._id : null,
         }));
@@ -400,57 +355,6 @@ export class ProductService {
       }
     }
     
-
-      
-      // async filterProduct(
-      //   categoryId?: string,
-      //   minPrice?: number,
-      //   maxPrice?: number,
-      //   page = 1,
-      //   limit = 10,
-      // ): Promise<PaginatedResponse<PopulatedCategory>> {
-      //   const query: any = {};
-    
-      //   // Add filters to the query dynamically
-      //   if (categoryId) {
-      //     query.categoryId = categoryId;
-      //   }
-      //   if (minPrice !== undefined) {
-      //     query.price = { ...query.price, $gte: minPrice };
-      //   }
-      //   if (maxPrice !== undefined) {
-      //     query.price = { ...query.price, $lte: maxPrice };
-      //   }
-    
-      //   // Pagination calculations
-      //   const skip = (page - 1) * limit;
-    
-      //   // Execute query with filters and pagination
-      //   const products = await this.productModel
-      //     .find(query)
-      //     .populate<{categoryId: PopulatedCategory}>({ path: 'categoryId', select: 'name' })
-      //     .skip(skip)
-      //     .limit(limit)
-      //     .exec();
-
-      //     const result = products.map((product) => ({
-      //       id: product._id,
-      //       name: product.name,
-      //       price: product.price,
-      //       quantity: product.quantity,
-      //       thumbnail: product.thumbnail,
-      //       categoryName: product.categoryId ? product.categoryId.name : 'No category',
-      //     }))
-    
-      //   const total = await this.productModel.countDocuments(query);
-    
-      //   return {
-      //       currentPage: page,
-      //       totalPages: Math.ceil(total / limit),
-      //       totalItems: total,
-      //       data: result,
-      //   };
-      // }
     
 
       async toggleProductStock(productId: string) {
