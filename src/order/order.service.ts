@@ -12,6 +12,7 @@ import * as https from 'https';
 import * as crypto from 'crypto';
 import * as dotenv from 'dotenv';
 import { User } from 'src/auth/schema/auth.schema';
+import { generateOrderNumber } from 'src/utils/token';
 dotenv.config();
 
 export interface populatedProduct {
@@ -44,104 +45,6 @@ export class OrderService {
     @InjectModel(User.name) private userModel: Model<User>,
   ) {}
 
-  // async createPayment(body: any, res: any, userId: string) {
-  //   const { first_name, last_name, amount, email, metadata } = body;
-  //   const { cart, name, note, phone, address, quantity } = metadata;
-
-  //   // Extract the necessary fields from cart items
-  //   const cartData = cart.map((item: any) => ({
-  //     product: item.product,
-  //     quantity: item.quantity,
-  //   }));
-
-  //   // 1. Create an order in the database
-  //   const newOrder = new this.orderModel({
-  //     email,
-  //     user: userId,
-  //     totalPrice: metadata.totalPrice,
-  //     name: metadata.name,
-  //     note: metadata.note,
-  //     phone: metadata.phone,
-  //     address: metadata.address,
-  //     cartItems: cartData,
-  //   });
-
-  //   const savedOrder = await newOrder.save();
-
-  //   // Attach the order ID to the metadata
-  //   metadata.orderId = savedOrder._id;
-
-  //   const params = JSON.stringify({
-  //     first_name,
-  //     last_name,
-  //     amount,
-  //     email,
-  //     metadata,
-  //     callback_url: 'http://localhost:3000/order-recieved',
-  //   });
-
-  //   const options = {
-  //     hostname: 'api.paystack.co',
-  //     port: 443,
-  //     path: '/transaction/initialize',
-  //     method: 'POST',
-  //     headers: {
-  //       Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`, // Ensure your Paystack secret key is properly set in the .env file
-  //       'Content-Type': 'application/json',
-  //     },
-  //   };
-
-  //   // 2. Initialize payment with Paystack
-  //   const reqPaystack = https.request(options, async (respaystack) => {
-  //     let data = '';
-
-  //     // Collect response data
-  //     respaystack.on('data', (chunk) => {
-  //       data += chunk;
-  //     });
-
-  //     respaystack.on('end', async () => {
-  //       try {
-  //         const parsedData = JSON.parse(data);
-
-  //         if (parsedData.status) {
-  //           // Update the order with payment reference
-  //           savedOrder.paymentReference = parsedData.data.reference;
-  //           await savedOrder.save();
-
-  //           console.log("data", data)
-  //           // Respond to the client with Paystack authorization URL and order ID
-  //           return res.json({
-  //             message: 'Payment initialized successfully',
-  //             orderId: savedOrder._id,
-  //             data: parsedData.data
-  //           });
-  //         } else {
-  //           // Handle failure to initialize payment
-  //           console.error('Payment initialization failed:', parsedData.message);
-  //           return res.status(400).json({
-  //             message: 'Failed to initialize payment',
-  //             error: parsedData.message,
-  //           });
-  //         }
-  //       } catch (error) {
-  //         console.error('Error processing payment initialization response:', error);
-  //         return res.status(500).json({ message: 'Error processing payment initialization response' });
-  //       }
-  //     });
-  //   });
-
-  //   // Handle errors during the HTTP request
-  //   reqPaystack.on('error', (error) => {
-  //     console.error('Error with Paystack request:', error);
-  //     return res.status(500).json({ message: 'Internal Server Error', error });
-  //   });
-
-  //   // Write the request parameters and end the request
-  //   reqPaystack.write(params);
-  //   reqPaystack.end();
-  // }
-
   async createPayment(body: any, res: any, userId: string) {
     const { first_name, last_name, amount, email, metadata } = body;
     const { cart, note, phone, address } = metadata;
@@ -167,6 +70,7 @@ export class OrderService {
         const totalPrice = quantity * product.price;
 
         // Create an individual order for the product
+        const orderNumber = generateOrderNumber()
         const newOrder = new this.orderModel({
           email,
           buyerId: userId,
@@ -177,6 +81,7 @@ export class OrderService {
           phone,
           address,
           note,
+          orderNumber,
           status: 'pending',
           paymentStatus: 'unpaid',
         });
@@ -379,7 +284,7 @@ export class OrderService {
       paymentStatus: order.paymentStatus,
       status: order.status,
       deliveryStatus: order.deliveryStatus,
-      paidAt: order.paidAt ? order.paidAt.toISOString().split('T')[0] : 'N/A',
+      paidAt: order.paidAt ? order.paidAt : 'N/A',
     }));
   }
 
@@ -413,7 +318,7 @@ export class OrderService {
       address: order.address,
       phone: order.phone || 'N/A',
       note: order.note || 'N/A',
-      paidAt: order.paidAt ? order.paidAt.toISOString().split('T')[0] : 'N/A',
+      paidAt: order.paidAt ? order.paidAt : 'N/A',
     }));
   }
 
@@ -458,11 +363,10 @@ export class OrderService {
         address: orders.address || 'N/A',
         phone: orders.phone || 'N/A',
         note: orders.note || 'N/A',
-        paidAt: orders.paidAt ? orders.paidAt.toISOString().split('T')[0] : 'N/A',
+        paidAt: orders.paidAt ? orders.paidAt : 'N/A',
       };
     }
   
-
   async getOrdersBySeller(sellerId: string) {
     const orders = await this.orderModel
       .find({ sellerId }) // Filter by sellerId
@@ -493,11 +397,12 @@ export class OrderService {
       address: order.address,
       phone: order.phone || 'N/A',
       note: order.note || 'N/A',
-      paidAt: order.paidAt ? order.paidAt.toISOString().split('T')[0] : 'N/A',
+      paidAt: order.paidAt ? order.paidAt : 'N/A',
     }));
   }
 
   async markOrderStatus(user: string, orderId: string, action: string) {
+
     const findOwnerOrder = await this.orderModel.findOne({
       _id: orderId,
       $or: [{ buyerId: user }, { sellerId: user }],
@@ -546,6 +451,7 @@ export class OrderService {
           });
         }
         order.deliveryStatus = 'shipped';
+        order.shippedDate = new Date();
         break;
 
       case 'deliver':
@@ -555,6 +461,7 @@ export class OrderService {
           });
         }
         order.deliveryStatus = 'delivered';
+        order.deliveredDate = new Date();
         break;
 
       case 'receive':
@@ -564,6 +471,7 @@ export class OrderService {
           });
         }
         order.deliveryStatus = 'accepted';
+        order.receivedDate = new Date();
         break;
 
       default:

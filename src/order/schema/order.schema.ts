@@ -36,6 +36,15 @@ export class Order {
   @Prop({ type: String, required: false })
   note: string;
 
+  @Prop({ type: Date })
+  shippedDate: Date;
+
+  @Prop({ type: Date })
+  deliveredDate: Date;
+
+  @Prop({ type: Date })
+  receivedDate: Date;
+
   @Prop({ type: String, enum: ['paid', 'unpaid'], default: 'unpaid' })
   paymentStatus: string;
 
