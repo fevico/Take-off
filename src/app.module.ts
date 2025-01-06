@@ -13,9 +13,15 @@ import { OrderModule } from './order/order.module';
 import { CartModule } from './cart/cart.module';
 import { BannerModule } from './banner/banner.module';
 import { ReviewModule } from './review/review.module';
-
+import { ChatModule } from './chat/chat.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
+ 
 @Module({
   imports: [
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'public'),
+    }),
           // Load environment variables from .env file
           ConfigModule.forRoot({
             envFilePath: '.env', // Specify the path to your .env file
@@ -31,6 +37,7 @@ import { ReviewModule } from './review/review.module';
     CartModule,
     BannerModule,
     ReviewModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [AppService],

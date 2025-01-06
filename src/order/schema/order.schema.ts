@@ -45,6 +45,9 @@ export class Order {
   @Prop({ type: Date })
   receivedDate: Date;
 
+  @Prop({ type: Date })
+  cancelledDate: Date;
+
   @Prop({ type: String, enum: ['paid', 'unpaid'], default: 'unpaid' })
   paymentStatus: string;
 

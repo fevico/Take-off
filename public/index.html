@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat Test</title>
+  <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+</head>
+<body>
+  <h1>Chat Test</h1>
+  <div>
+    <label for="room">Room:</label>
+    <input id="room" type="text">
+    <button id="joinRoom">Join Room</button>
+  </div>
+  <div>
+    <label for="message">Message:</label>
+    <input id="message" type="text">
+    <button id="sendMessage">Send</button>
+  </div>
+  <ul id="messages"></ul>
+  <script>
+    const socket = io('http://localhost:3003');
+
+    document.getElementById('joinRoom').onclick = () => {
+      const room = document.getElementById('room').value;
+      socket.emit('joinRoom', room);
+    };
+
+    document.getElementById('sendMessage').onclick = () => {
+      const room = document.getElementById('room').value;
+      const message = document.getElementById('message').value;
+      socket.emit('newMessage', { room, sender: 'TestUser', message });
+    };
+
+    socket.on('message', (data) => {
+      const li = document.createElement('li');
+      li.textContent = `${data.sender}: ${data.message}`;
+      document.getElementById('messages').appendChild(li);
+    });
+  </script>
+</body>
+</html>

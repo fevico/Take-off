@@ -207,7 +207,6 @@ export class OrderService {
         for (const order of orders) {
           order.paidAt = new Date();
           order.paymentStatus = 'paid';
-          order.status = 'confirmed';
           await order.save();
 
           if (order.product) {
@@ -439,6 +438,7 @@ export class OrderService {
         }
         order.status = 'cancelled';
         order.deliveryStatus = 'cancelled';
+        order.cancelledDate = new Date();
         break;
 
       case 'ship':
