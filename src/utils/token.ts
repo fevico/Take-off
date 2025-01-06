@@ -23,9 +23,6 @@ export const generateOrderNumber = (): string => {
     return `${timestamp}${randomPart}`.slice(-10); // Ensure 10 characters
   };
   
-  const number = generateOrderNumber();
-  console.log(number);
-  
   
 
 // export const generateOrderNumber = (length: number): string => {
