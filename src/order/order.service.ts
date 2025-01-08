@@ -7,12 +7,13 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Order } from './schema/order.schema';
-import { Model, Types } from 'mongoose';
+import { Model, ObjectId, Types } from 'mongoose';
 import * as https from 'https';
 import * as crypto from 'crypto';
 import * as dotenv from 'dotenv';
 import { User } from 'src/auth/schema/auth.schema';
 import { generateOrderNumber } from 'src/utils/token';
+import { Wallet } from 'src/wallet/schema/wallet';
 dotenv.config();
 
 export interface populatedProduct {
@@ -33,16 +34,22 @@ type Product = {
   thumbnail: string;
 };
 
-type CartItem = {
-  product: Product;
-  quantity: number;
-};
+interface Transaction {
+  amount: number;
+  date: Date;
+}
+
+interface SellerTransaction {
+  amount: number;
+  transactions: Transaction[];
+}
 
 @Injectable()
 export class OrderService {
   constructor(
     @InjectModel(Order.name) private orderModel: Model<Order>,
     @InjectModel(User.name) private userModel: Model<User>,
+    @InjectModel(Wallet.name) private walletModel: Model<Wallet>,
   ) {}
 
   async createPayment(body: any, res: any, userId: string) {
@@ -170,67 +177,174 @@ export class OrderService {
     reqPaystack.end();
   }
 
+  // async webhook(req: any, res: any) {
+  //   try {
+  //     const payload = req.body;
+  //     const paystackSignature = req.headers['x-paystack-signature'];
+  //     if (!paystackSignature) {
+  //       return res.status(400).json({ message: 'Missing signature' });
+  //     }
+
+  //     const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
+  //     const hash = crypto
+  //       .createHmac('sha512', PAYSTACK_SECRET_KEY)
+  //       .update(JSON.stringify(payload))
+  //       .digest('hex');
+
+  //     console.log(hash);
+  //     if (hash !== paystackSignature) {
+  //       return res.status(400).json({ message: 'Invalid signature' });
+  //     }
+
+  //     const event = payload;
+  //     const data = event.data;
+
+  //     if (event.event === 'charge.success') {
+  //       // Find all orders with the same paymentReference
+  //       const orders = await this.orderModel.find({
+  //         paymentReference: data.reference,
+  //       });
+
+  //       if (!orders.length) {
+  //         return res.status(404).json({ message: 'Orders not found' });
+  //       }
+
+  //       // Update payment details and order status for each order
+  //       const productIds = [];
+  //       for (const order of orders) {
+  //         order.paidAt = new Date();
+  //         order.paymentStatus = 'paid';
+  //         await order.save();
+
+  //         if (order.product) {
+  //           // Accumulate product IDs (single or multiple)
+  //           if (Array.isArray(order.product)) {
+  //             productIds.push(...order.product);
+  //           } else {
+  //             productIds.push(order.product);
+  //           }
+  //         }
+  //       }
+
+  //       // Add the products to the user's purchasedProducts field
+  //       await this.userModel.findByIdAndUpdate(
+  //         orders[0].buyerId, // Assuming all orders have the same buyerId for a given reference
+  //         {
+  //           $addToSet: { products: { $each: productIds } }, // Add unique products
+  //         },
+  //         { new: true },
+  //       );
+
+  //       return res
+  //         .status(200)
+  //         .json({ message: 'Payment processed successfully' });
+  //     } else if (event.event === 'charge.failed') {
+  //       console.error('Payment failed:', data);
+  //       return res.status(400).json({ message: 'Payment failed' });
+  //     }
+  //   } catch (err) {
+  //     console.error('Error processing webhook:', err);
+  //     return res.status(500).json({ message: 'Server error' });
+  //   }
+  // }
+
   async webhook(req: any, res: any) {
     try {
       const payload = req.body;
       const paystackSignature = req.headers['x-paystack-signature'];
+  
       if (!paystackSignature) {
         return res.status(400).json({ message: 'Missing signature' });
       }
-
+  
       const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
       const hash = crypto
         .createHmac('sha512', PAYSTACK_SECRET_KEY)
         .update(JSON.stringify(payload))
         .digest('hex');
-
-      console.log(hash);
+  
+        console.log(hash)
       if (hash !== paystackSignature) {
         return res.status(400).json({ message: 'Invalid signature' });
       }
-
+  
       const event = payload;
       const data = event.data;
-
+  
       if (event.event === 'charge.success') {
         // Find all orders with the same paymentReference
         const orders = await this.orderModel.find({
           paymentReference: data.reference,
         });
-
+  
         if (!orders.length) {
           return res.status(404).json({ message: 'Orders not found' });
         }
-
-        // Update payment details and order status for each order
+  
         const productIds = [];
+        // const sellerTransactions = {}; // Group transactions by sellerId
+        const sellerTransactions = new Map<ObjectId, SellerTransaction>();
+  
         for (const order of orders) {
           order.paidAt = new Date();
           order.paymentStatus = 'paid';
           await order.save();
-
+  
           if (order.product) {
-            // Accumulate product IDs (single or multiple)
-            if (Array.isArray(order.product)) {
-              productIds.push(...order.product);
-            } else {
-              productIds.push(order.product);
-            }
+            productIds.push(order.product);
           }
-        }
+  
+          // Group transactions by sellerId
+          const sellerId = order.sellerId.toString();
 
+          if (!sellerTransactions[sellerId]) {
+            sellerTransactions[sellerId] = {
+              amount: 0,
+              transactions: [],
+            };
+          }
+  
+          const totalPrice = order.totalPrice;
+          const eightyPercent = totalPrice * 0.8;
+          const twentyPercent = totalPrice * 0.2;
+
+          sellerTransactions[sellerId].amount += eightyPercent;
+          sellerTransactions[sellerId].transactions.push({
+            amount: totalPrice,
+            totalAmount: totalPrice, // Adjust if needed
+            date: new Date(),
+            type: "credit"
+          });
+        }
+  
         // Add the products to the user's purchasedProducts field
         await this.userModel.findByIdAndUpdate(
-          orders[0].buyerId, // Assuming all orders have the same buyerId for a given reference
-          {
-            $addToSet: { products: { $each: productIds } }, // Add unique products
-          },
+          orders[0].buyerId,
+          { $addToSet: { products: { $each: productIds } } },
           { new: true },
         );
-
-        return res
-          .status(200)
-          .json({ message: 'Payment processed successfully' });
+  
+        // Update or create wallets for sellers
+        for (const [sellerId, transactionData] of Object.entries(sellerTransactions)) {
+          let wallet = await this.walletModel.findOne({ owner: sellerId });
+  
+          if (!wallet) {
+            // Create a new wallet if none exists
+            wallet = new this.walletModel({
+              owner: sellerId,
+              balance: 0,
+              transactions: [],
+            });
+          }
+  
+          // Update wallet balance and add transactions
+          wallet.balance += transactionData.amount;
+          wallet.transactions.push(...transactionData.transactions);
+  
+          await wallet.save();
+        }
+  
+        return res.status(200).json({ message: 'Payment processed successfully' });
       } else if (event.event === 'charge.failed') {
         console.error('Payment failed:', data);
         return res.status(400).json({ message: 'Payment failed' });
@@ -240,6 +354,7 @@ export class OrderService {
       return res.status(500).json({ message: 'Server error' });
     }
   }
+  
 
   async orderDetailsByReference(reference: string) {
     const orders = await this.orderModel

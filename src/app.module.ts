@@ -16,6 +16,7 @@ import { ReviewModule } from './review/review.module';
 import { ChatModule } from './chat/chat.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { WalletModule } from './wallet/wallet.module';
  
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { join } from 'path';
     BannerModule,
     ReviewModule,
     ChatModule,
+    WalletModule,
   ],
   controllers: [AppController],
   providers: [AppService],
