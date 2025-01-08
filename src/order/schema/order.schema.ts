@@ -54,7 +54,14 @@ export class Order {
   @Prop({ type: Date })
   paidAt: Date;
 
-  @Prop({ type: String, enum: ['pending', 'accepted', 'shipped', 'delivered'], default: 'pending' })
+  @Prop({ type: String, required: true })
+  name: string;
+
+  @Prop({ type: Date, default: Date.now })
+  createdAt: Date;
+
+
+  @Prop({ type: String, enum: ['N/A', 'pending', 'accepted', 'shipped', 'delivered'], default: 'N/A' })
   deliveryStatus: string;
 
   @Prop({ type: String, required: false })

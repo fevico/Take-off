@@ -43,11 +43,11 @@ export class OrderService {
   constructor(
     @InjectModel(Order.name) private orderModel: Model<Order>,
     @InjectModel(User.name) private userModel: Model<User>,
-  ) {}
+  ) { }
 
-  async createPayment(body: any, res: any, userId: string) {
+  async createPayment(body: any, res: any, req: any, userId: string) {
     const { first_name, last_name, amount, email, metadata } = body;
-    const { cart, note, phone, address } = metadata;
+    const { cart, note, phone, address, name } = metadata;
 
     // Group cart items by sellerId
     const groupedCart = cart.reduce((acc: any, item: any) => {
@@ -72,6 +72,7 @@ export class OrderService {
         // Create an individual order for the product
         const orderNumber = generateOrderNumber()
         const newOrder = new this.orderModel({
+          name,
           email,
           buyerId: userId,
           sellerId,
@@ -101,7 +102,8 @@ export class OrderService {
       amount,
       email,
       metadata,
-      callback_url: 'http://localhost:3000/order-recieved',
+      // callback_url: 'http://localhost:3000/order-recieved',
+      callback_url: `${req.headers.origin}/order-recieved`,
     });
 
     const options = {
@@ -260,7 +262,7 @@ export class OrderService {
       id: order._id,
       orderNumber: order.orderNumber || 'N/A',
       buyer: {
-        name: order.buyerId.name || 'N/A',
+        name: order.buyerId?.name || order.name || 'N/A',
         email: order.buyerId.email,
       },
       seller: {
@@ -284,6 +286,8 @@ export class OrderService {
       status: order.status,
       deliveryStatus: order.deliveryStatus,
       paidAt: order.paidAt ? order.paidAt : 'N/A',
+      createdAt: order.createdAt ? order.createdAt : 'N/A',
+
     }));
   }
 
@@ -318,54 +322,62 @@ export class OrderService {
       phone: order.phone || 'N/A',
       note: order.note || 'N/A',
       paidAt: order.paidAt ? order.paidAt : 'N/A',
+      createdAt: order.createdAt ? order.createdAt : 'N/A',
+
     }));
   }
 
-    async getOrderById(user: string, orderId: string) {
-      const orders = await this.orderModel
-        .findOne({
-          _id: orderId,
-          $or: [{ buyerId: user }, { sellerId: user }],
-        })
-        .populate<{product: populatedProduct }>('product', 'name thumbnail price') // Populate product details
-        .populate<{ sellerId: populatedUser }>('sellerId', 'name email') // Populate seller details
-        .populate<{buyerId: populatedUser}>('buyerId', 'name email'); // Populate buyer details
-  
-      if (!orders) {
-        throw new NotFoundException({ error: 'Order not found' });
-      }
-  
-      // Safely map populated fields to the response format
-      return {
-        id: orders._id,
-        product: {
-          id: orders.product?._id || null, // Safely access optional fields
-          name: orders.product?.name || 'N/A',
-          thumbnail: orders.product?.thumbnail || 'N/A',
-          price: orders.product?.price || 0,
-        },
-        seller: {
-          id: orders.sellerId?._id || null,
-          name: orders.sellerId?.name || 'N/A',
-          email: orders.sellerId?.email || 'N/A',
-        },
-        buyer: {
-          id: orders.buyerId?._id || null,
-          name: orders.buyerId?.name || 'N/A',
-          email: orders.buyerId?.email || 'N/A',
-        },
-        quantity: orders.quantity || 0,
-        totalPrice: orders.totalPrice || 0,
-        status: orders.status || 'unknown',
-        paymentStatus: orders.paymentStatus || 'unknown',
-        deliveryStatus: orders.deliveryStatus || 'unknown',
-        address: orders.address || 'N/A',
-        phone: orders.phone || 'N/A',
-        note: orders.note || 'N/A',
-        paidAt: orders.paidAt ? orders.paidAt : 'N/A',
-      };
+  async getOrderById(user: string, orderId: string) {
+    const orders = await this.orderModel
+      .findOne({
+        _id: orderId,
+        $or: [{ buyerId: user }, { sellerId: user }],
+      })
+      .populate<{ product: populatedProduct }>('product', 'name thumbnail price') // Populate product details
+      .populate<{ sellerId: populatedUser }>('sellerId', 'name email') // Populate seller details
+      .populate<{ buyerId: populatedUser }>('buyerId', 'name email'); // Populate buyer details
+
+    if (!orders) {
+      throw new NotFoundException({ error: 'Order not found' });
     }
-  
+
+    // Safely map populated fields to the response format
+    return {
+      id: orders._id,
+      product: {
+        id: orders.product?._id || null, // Safely access optional fields
+        name: orders.product?.name || 'N/A',
+        thumbnail: orders.product?.thumbnail || 'N/A',
+        price: orders.product?.price || 0,
+      },
+      seller: {
+        id: orders.sellerId?._id || null,
+        name: orders.sellerId?.name || 'N/A',
+        email: orders.sellerId?.email || 'N/A',
+      },
+      buyer: {
+        id: orders.buyerId?._id || null,
+        name: orders.buyerId?.name || orders.name || 'N/A',
+        email: orders.buyerId?.email || 'N/A',
+      },
+      quantity: orders.quantity || 0,
+      totalPrice: orders.totalPrice || 0,
+      status: orders.status || 'unknown',
+      paymentStatus: orders.paymentStatus || 'unknown',
+      deliveryStatus: orders.deliveryStatus || 'unknown',
+      address: orders.address || 'N/A',
+      phone: orders.phone || 'N/A',
+      note: orders.note || 'N/A',
+      paidAt: orders.paidAt ? orders.paidAt : 'N/A',
+      createdAt: orders.createdAt ? orders.createdAt : 'N/A',
+      shippedDate: orders.shippedDate ? orders.shippedDate : 'N/A',
+      deliveredDate: orders.deliveredDate ? orders.deliveredDate : 'N/A',
+      receivedDate: orders.receivedDate ? orders.receivedDate : 'N/A',
+      cancelledDate: orders.cancelledDate ? orders.cancelledDate : 'N/A',
+      orderNumber: orders.orderNumber || 'N/A',
+    };
+  }
+
   async getOrdersBySeller(sellerId: string) {
     const orders = await this.orderModel
       .find({ sellerId }) // Filter by sellerId
@@ -385,7 +397,7 @@ export class OrderService {
       },
       buyer: {
         id: order.buyerId._id,
-        name: order.buyerId.name,
+        name: order.buyerId.name || order.name || 'N/A',
         email: order.buyerId.email,
       },
       quantity: order.quantity,
@@ -397,6 +409,8 @@ export class OrderService {
       phone: order.phone || 'N/A',
       note: order.note || 'N/A',
       paidAt: order.paidAt ? order.paidAt : 'N/A',
+      createdAt: order.createdAt ? order.createdAt : 'N/A',
+
     }));
   }
 

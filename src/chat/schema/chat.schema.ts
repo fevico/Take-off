@@ -13,10 +13,12 @@ export class Chat extends Document {
   room: string;
 
   @Prop({ required: true })
-  content: string;
+  message: string;
+
 
   @Prop({ default: Date.now })
   timestamp: Date;
 }
+
 
 export const MessageSchema = SchemaFactory.createForClass(Chat);

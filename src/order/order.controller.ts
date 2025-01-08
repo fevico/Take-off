@@ -15,7 +15,7 @@ export class OrderController {
     @UseGuards(AuthenticationGuard)
     async createPayment(@Body() body: any, @Res() res: any, @Req() req: Request) {
         const user = req.user.id
-        return this.orderService.createPayment(body, res, user);
+        return this.orderService.createPayment(body, res, req, user);
     }
 
     // @Roles(['admin', 'seller'])
