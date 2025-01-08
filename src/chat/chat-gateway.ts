@@ -2,7 +2,7 @@ import { OnGatewayConnection, OnGatewayDisconnect, SubscribeMessage, WebSocketGa
 import { Socket, Server } from "socket.io"
 import { ChatService } from "./chat.service";
 
-@WebSocketGateway(3003, { cors: { origin: "*" } })
+@WebSocketGateway({ cors: { origin: "*" } })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(private readonly chatService: ChatService) { }
 
