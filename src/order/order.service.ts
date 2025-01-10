@@ -14,6 +14,7 @@ import * as dotenv from 'dotenv';
 import { User } from 'src/auth/schema/auth.schema';
 import { generateOrderNumber } from 'src/utils/token';
 import { Wallet } from 'src/wallet/schema/wallet';
+import { Product } from 'src/product/schema/product.schema';
 dotenv.config();
 
 export interface populatedProduct {
@@ -28,7 +29,7 @@ export interface populatedUser {
   _id: string;
   email: string;
 }
-type Product = {
+type Products = {
   _id: string;
   name: string;
   thumbnail: string;
@@ -50,6 +51,7 @@ export class OrderService {
     @InjectModel(Order.name) private orderModel: Model<Order>,
     @InjectModel(User.name) private userModel: Model<User>,
     @InjectModel(Wallet.name) private walletModel: Model<Wallet>,
+    @InjectModel(Product.name) private productModel: Model<Products>,
   ) { }
 
   async createPayment(body: any, res: any, req: any, userId: string) {
@@ -541,4 +543,261 @@ export class OrderService {
     await order.save();
     return { statusCode: 200, message: 'Order updated successfully', order };
   }
+
+  async syncOrderAnalytics(userId: string) {
+    // Total number of products owned by the seller
+    const totalProductBySeller = await this.productModel
+      .find({ owner: userId })
+      .countDocuments();
+  
+    // Total orders received by the seller
+    const totalOrderReceived = await this.orderModel
+      .find({ sellerId: userId })
+      .countDocuments();
+  
+    // Total orders confirmed for the seller
+    const totalOrderConfirmed = await this.orderModel
+      .find({ sellerId: userId, status: 'confirmed' })
+      .countDocuments();
+  
+    // Total orders placed by the buyer
+    const totalOrderPlaced = await this.orderModel
+      .find({ buyerId: userId })
+      .countDocuments();
+  
+    // Orders with specific delivery statuses
+    const totalOrderReceivedBySeller = await this.orderModel
+      .find({ sellerId: userId, deliveryStatus: 'accepted' })
+      .countDocuments();
+  
+    const totalOrderPendingBySeller = await this.orderModel
+      .find({ sellerId: userId, deliveryStatus: 'pending' })
+      .countDocuments();
+  
+    // Sum up total sales (totalPrice) across all orders (admin perspective)
+    const totalSalesByAdminResult = await this.orderModel.aggregate([
+      { $match: { totalPrice: { $gt: 0 } } },
+      { $group: { _id: null, totalSales: { $sum: '$totalPrice' } } },
+    ]);
+    const totalSalesByAdmin = totalSalesByAdminResult.length
+      ? totalSalesByAdminResult[0].totalSales
+      : 0;
+  
+    // Sum up total spending by the buyer
+    const totalSpentByBuyerResult = await this.orderModel.aggregate([
+      { $match: { buyerId: userId, totalPrice: { $gt: 0 } } },
+      { $group: { _id: null, totalSpent: { $sum: '$totalPrice' } } },
+    ]);
+    const totalSpentByBuyer = totalSpentByBuyerResult.length
+      ? totalSpentByBuyerResult[0].totalSpent
+      : 0;
+  
+    // Return all analytics
+    return {
+      totalProductBySeller,
+      totalOrderReceived,
+      totalOrderConfirmed,
+      totalOrderPlaced,
+      totalOrderReceivedBySeller,
+      totalOrderPendingBySeller,
+      totalSalesByAdmin,
+      totalSpentByBuyer,
+    };
+  }
+
+  async getMonthlyAnalytics(userId: string): Promise<any> {
+    const year = new Date().getFullYear();
+  
+    // Total sales by seller for each month
+    const totalSales = await this.orderModel.aggregate([
+      { $match: { sellerId: new Types.ObjectId(userId), deliveryStatus: "completed" } }, // Filter seller's completed orders
+      {
+        $group: {
+          _id: { month: { $month: "$createdAt" }, year: { $year: "$createdAt" } },
+          totalSales: { $sum: "$totalPrice" }, // Sum totalPrice for sales
+        },
+      },
+      { $match: { "_id.year": year } }, // Filter for current year
+      { $sort: { "_id.month": 1 } }, // Sort by month
+    ]);
+  
+    // Total spending by buyer for each month
+    const totalSpending = await this.orderModel.aggregate([
+      { $match: { buyerId: new Types.ObjectId(userId), deliveryStatus: "completed" } }, // Filter buyer's completed orders
+      {
+        $group: {
+          _id: { month: { $month: "$createdAt" }, year: { $year: "$createdAt" } },
+          totalSpending: { $sum: "$totalPrice" }, // Sum totalPrice for spending
+        },
+      },
+      { $match: { "_id.year": year } }, // Filter for current year
+      { $sort: { "_id.month": 1 } }, // Sort by month
+    ]);
+  
+    // Formatting the results for better readability
+    const formatData = (data: any) => {
+      const monthlyData = Array(12).fill(0); // Initialize array for 12 months
+      data.forEach((item: any) => {
+        monthlyData[item._id.month - 1] = item.totalSales || item.totalSpending; // Map data to respective month
+      });
+      return monthlyData;
+    };
+  
+    return {
+      totalSales: formatData(totalSales),
+      totalSpending: formatData(totalSpending),
+    };
+  }
+
+  async getTopProducts(): Promise<any> {
+  const topProducts = await this.orderModel.aggregate([
+    // Filter only completed or confirmed orders
+    { $match: {status: 'confirmed' } },
+
+    // Group by productId
+    {
+      $group: {
+        _id: '$product', // Group by productId
+        totalSales: { $sum: '$totalPrice' }, // Sum up totalPrice
+        totalQuantity: { $sum: '$quantity' }, // Sum up quantity
+      },
+    },
+
+    // Sort by totalSales in descending order
+    { $sort: { totalSales: -1 } },
+
+    // Limit to top 5 products
+    { $limit: 5 },
+
+    // Lookup product details
+    {
+      $lookup: {
+        from: 'products', // Replace 'products' with your product collection name
+        localField: '_id',
+        foreignField: '_id',
+        as: 'productDetails',
+      },
+    },
+
+    // Project the desired fields
+    {
+      $project: {
+        _id: 0,
+        productId: '$_id',
+        totalSales: 1,
+        totalQuantity: 1,
+        productDetails: {
+          name: { $arrayElemAt: ['$productDetails.name', 0] }, // Include only the 'name' field
+          price: { $arrayElemAt: ['$productDetails.price', 0] }, // Include only the 'price' field
+          category: { $arrayElemAt: ['$productDetails.category', 0] }, // Include only the 'category' field
+          thumbnail: { $arrayElemAt: ['$productDetails.thumbnail', 0] },
+          status: { $arrayElemAt: ['$productDetails.status', 0] },
+          quantity: { $arrayElemAt: ['$productDetails.quantity', 0] },
+        },
+      }      
+    },
+  ]);
+
+  return topProducts;
+}
+ 
+async getEarningsAndPayouts(){
+  const analytics = await this.orderModel.aggregate([
+    {
+      // Match orders that are confirmed or successfully paid
+      $match: { status: 'confirmed' },
+    },
+    {
+      // Group by year and month and calculate total earnings
+      $group: {
+        _id: {
+          year: { $year: '$createdAt' },
+          month: { $month: '$createdAt' },
+        },
+        totalEarnings: { $sum: '$totalPrice' }, // Calculate total sales for the month
+      },
+    },
+    {
+      // Calculate payouts (80% of earnings) and admin share (20%)
+      $project: {
+        _id: 0,
+        year: '$_id.year',
+        month: '$_id.month',
+        totalEarnings: 1,
+        payouts: { $multiply: ['$totalEarnings', 0.8] }, // 80% of earnings
+        adminShare: { $multiply: ['$totalEarnings', 0.2] }, // 20% of earnings
+      },
+    },
+    {
+      // Optionally sort by year and month
+      $sort: { year: 1, month: 1 },
+    },
+  ]);
+  return analytics;
+}
+
+async saleByCategory(){
+  const salesByCategory = await this.orderModel.aggregate([
+    {
+      // Match confirmed or completed orders
+      $match: { status: 'confirmed' },
+    },
+    {
+      // Unwind the products array to work with individual product entries
+      $unwind: '$products',
+    },
+    {
+      // Lookup product details to fetch categoryId and price
+      $lookup: {
+        from: 'products', // Collection name of Product schema
+        localField: 'products.productId',
+        foreignField: '_id',
+        as: 'productDetails',
+      },
+    },
+    {
+      // Unwind the populated product details
+      $unwind: '$productDetails',
+    },
+    {
+      // Group by categoryId and sum the total sales (price * quantity)
+      $group: {
+        _id: '$productDetails.categoryId', // Group by categoryId
+        totalSales: {
+          $sum: {
+            $multiply: ['$products.quantity', '$productDetails.price'], // Calculate total sales
+          },
+        },
+      },
+    },
+    {
+      // Add a field to calculate the total sales across all categories
+      $group: {
+        _id: null, // Single document for overall total sales
+        categories: { $push: { category: '$_id', totalSales: '$totalSales' } },
+        overallSales: { $sum: '$totalSales' }, // Calculate total sales for all categories
+      },
+    },
+    {
+      // Calculate percentage contribution for each category
+      $unwind: '$categories',
+    },
+    {
+      $project: {
+        _id: 0,
+        categoryId: '$categories.category',
+        totalSales: '$categories.totalSales',
+        percentage: {
+          $multiply: [{ $divide: ['$categories.totalSales', '$overallSales'] }, 100],
+        },
+      },
+    },
+    {
+      // Sort by percentage contribution
+      $sort: { percentage: -1 },
+    },
+  ]);
+  return salesByCategory
+}
+  
 }

@@ -1,8 +1,8 @@
-import { Body, Controller, Get, Patch, Post, Put, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthenticationGuard } from 'src/guards/Authentication';
 import { Request } from 'express';
-import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { LoginDto, RegisterUserDto, ResendTokenDto, SignUpDto, VerifyTokenDto } from './dto/auth.dto';
 
 @Controller('auth')
@@ -474,5 +474,39 @@ export class AuthController {
     async getUserDetails(@Req() req: Request) {
       const {id, name, email, phone, address, avatar, role} = req.user;
       return {data:{id, name, email, phone, address, avatar, role}} 
+    }  
+    
+    @Get('user-growth')
+    @ApiOperation({
+      summary: 'Get Monthly User Growth',
+      description: 'Retrieve the number of new user accounts created per month for a given time period.',
+    })
+    @ApiResponse({
+      status: 200,
+      description: 'A list of monthly user growth data.',
+      schema: {
+        type: 'object',
+        properties: {
+          data: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                year: { type: 'integer', example: 2023 },
+                month: { type: 'integer', example: 1 },
+                userCount: { type: 'integer', example: 150 },
+              },
+            },
+          },
+        },
+      },
+    })
+    @ApiResponse({
+      status: 500,
+      description: 'Internal server error.',
+    })
+    async getUserGrowth(): Promise<any> {
+      // Fetch user growth data without query params
+      return this.authService.getUserGrowthData();
     }    
 } 

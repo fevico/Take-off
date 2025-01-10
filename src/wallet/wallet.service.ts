@@ -12,4 +12,10 @@ export class WalletService {
         if(!wallet) throw new NotFoundException("No wallet found for this user!")
             return {wallet : wallet.balance};
     }
+
+    async getTransactions(userId: string) {
+        const wallet = await this.walletModel.findOne({owner:userId});
+        if(!wallet) throw new NotFoundException("No wallet found for this user!")
+            return {transactions : wallet.transactions};
+    }
 }

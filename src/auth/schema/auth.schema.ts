@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Schema as MongooseSchema, Types } from 'mongoose';
 
-@Schema()
+@Schema({timestamps: true})
 export class User {
     
   @Prop({type: String, required: true, unique: true})
@@ -45,6 +45,8 @@ export class User {
   @Prop({ required: true, enum: ['admin', 'buyer', 'seller'], default: 'buyer' })
   role: string;
 
+  @Prop({type: Date, default: Date.now})
+  createdAt: Date
 }
 
 export const userSchema = SchemaFactory.createForClass(User);

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Param, Patch, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { Request } from 'express';
 import { AuthenticationGuard } from 'src/guards/Authentication';
@@ -140,6 +140,108 @@ export class OrderController {
     async webhook(@Body() body: any, @Res() res: any, @Req() req: any) {
       return this.orderService.webhook(req, res);
     }
+
+    @ApiOperation({
+      summary: 'Get Monthly Summary for seller',
+      description:
+        'Retrieve the total spending by a buyer and total sales by a seller for each month of the current year.',
+    })
+    @ApiResponse({
+      status: 200,
+      description: 'The monthly analytics summary.',
+      schema: {
+        example: {
+          totalSales: [500, 700, 1000, 1200, 0, 800, 0, 0, 0, 300, 400, 600],
+          totalSpending: [200, 300, 150, 400, 0, 250, 0, 0, 0, 100, 200, 300],
+        },
+      },
+    })
+    @ApiResponse({
+      status: 400,
+      description: 'Bad Request. Invalid userId format.',
+    })
+    @ApiResponse({
+      status: 404,
+      description: 'User not found or no data available for the current year.',
+    })
+    @Get('monthly-summary')
+    @UseGuards(AuthenticationGuard)
+    async getMonthlySummary(@Req() req: Request) {
+      const userId = req.user.id;
+      return await this.orderService.getMonthlyAnalytics(userId);
+    }
+  
+    @Get('analytics')
+    @UseGuards(AuthenticationGuard)
+    @ApiOperation({ summary: 'Get order analytics' })
+    @ApiResponse({ status: 200, description: 'Order analytics retrieved successfully' })
+    @ApiResponse({ status: 404, description: 'Order analytics not found' })
+    async orderAnalytics(@Req() req: Request) {
+      const user = req.user.id;
+      return this.orderService.syncOrderAnalytics(user);
+    }
+
+    @Get('top-products')
+    @UseGuards(AuthenticationGuard)
+    @ApiOperation({
+      summary: 'Get Top 5 Products',
+      description: 'Retrieve the top 5 products with the highest sales and number sold.',
+    })
+    @ApiResponse({
+      status: 200,
+      description: 'The top 5 products by sales.',
+      schema: {
+        example: [
+          {
+            productId: '64e7f40e6f1c4d12345abcde',
+            totalSales: 50000,
+            totalQuantity: 20,
+            productDetails: {
+              name: 'Product Name',
+              price: 2500,
+              category: 'Electronics',
+            },
+          },
+        ],
+      },
+    })
+    @ApiResponse({
+      status: 404,
+      description: 'No data available.',
+    })    
+    async getTopProducts() {
+      return await this.orderService.getTopProducts();
+    }
+
+    @Roles(["admin"])
+    @Get('earnings-vs-payouts')
+    @UseGuards(AuthenticationGuard, AuthorizationGuard)
+    @ApiOperation({ summary: 'Get earnings vs payouts vs months analytics' })
+@ApiResponse({ status: 200, description: 'Earnings vs Payouts fetched successfully' })
+@ApiResponse({ status: 400, description: 'Failed to fetch analytics' })
+async getEarningsVsPayouts(): Promise<any> {
+  try {
+    const analytics = await this.orderService.getEarningsAndPayouts();
+    return { success: true, data: analytics };
+  } catch (error) {
+    throw new BadRequestException('Failed to fetch analytics');
+  }
+}
+
+    @Roles(["admin"])
+    @Get('sales-by-category')
+    @UseGuards(AuthenticationGuard)
+    @ApiOperation({ summary: 'Get sales vs category vs months analytics' })
+@ApiResponse({ status: 200, description: 'Sales vs Category fetched successfully' })
+@ApiResponse({ status: 400, description: 'Failed to fetch analytics' })
+async saleByCategory(): Promise<any> {
+  try {
+    const analytics = await this.orderService.saleByCategory();
+    return { success: true, data: analytics };
+  } catch (error) {
+    throw new BadRequestException('Failed to fetch analytics');
+  }
+}
 
     
     @Get('by-reference/:reference')

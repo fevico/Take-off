@@ -227,4 +227,48 @@ export class AuthService {
 
     
   }
+
+  async getUserGrowthData(): Promise<any> {
+    const currentDate = new Date();
+    const startDate = new Date('2023-01-01'); // Example: earliest start date you want
+    const endDate = currentDate; // Default to the current date
+
+    const monthlyUserGrowth = await this.userModel.aggregate([
+      {
+        // Match users created within the specific date range
+        $match: {
+          createdAt: {
+            $gte: startDate, // Use startDate
+            $lte: endDate,   // Use endDate
+          },
+        },
+      },
+      {
+        // Group by year and month of the createdAt field
+        $group: {
+          _id: {
+            year: { $year: '$createdAt' },
+            month: { $month: '$createdAt' },
+          },
+          userCount: { $sum: 1 }, // Count the number of users created
+        },
+      },
+      {
+        // Project the year and month in a readable format
+        $project: {
+          _id: 0,
+          year: '$_id.year',
+          month: '$_id.month',
+          userCount: 1,
+        },
+      },
+      {
+        // Sort by year and month
+        $sort: { year: 1, month: 1 },
+      },
+    ]);
+
+    return { data: monthlyUserGrowth };
+  }
+
 }

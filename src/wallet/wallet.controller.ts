@@ -59,4 +59,10 @@ export class WalletController {
         const userId = req.user.id;
         return this.walletService.getUserWallet(userId);
     }
+
+    @Get('transactions')
+    async getTransactions(@Req() req: Request) {
+        const userId = req.user.id;
+        return this.walletService.getTransactions(userId);
+    }
 }
