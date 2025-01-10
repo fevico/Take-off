@@ -573,6 +573,11 @@ export class OrderService {
     const totalOrderPendingBySeller = await this.orderModel
       .find({ sellerId: userId, deliveryStatus: 'pending' })
       .countDocuments();
+
+      const totalBuyers = await this.userModel.find({ role: 'buyer' }).countDocuments();
+      const totalSellers = await this.userModel.find({ role: 'seller' }).countDocuments();
+
+      const pendingDeliveryByBuyer = await this.orderModel.find({ deliveryStatus: 'pending', buyerId: userId }).countDocuments();
   
     // Sum up total sales (totalPrice) across all orders (admin perspective)
     const totalSalesByAdminResult = await this.orderModel.aggregate([
@@ -602,6 +607,9 @@ export class OrderService {
       totalOrderPendingBySeller,
       totalSalesByAdmin,
       totalSpentByBuyer,
+      totalBuyers,
+      totalSellers,
+      pendingDeliveryByBuyer
     };
   }
 
@@ -633,6 +641,17 @@ export class OrderService {
       { $match: { "_id.year": year } }, // Filter for current year
       { $sort: { "_id.month": 1 } }, // Sort by month
     ]);
+
+    const totalPlatFormSales = await this.orderModel.aggregate([
+      {
+        $group: {
+          _id: { month: { $month: "$createdAt" }, year: { $year: "$createdAt" } },
+          totalSales: { $sum: "$totalPrice" }, // Sum totalPrice for sales
+        },
+      },
+      { $match: { "_id.year": year }},
+      { $sort: { "_id.month": 1 } }, // Sort by month
+    ])
   
     // Formatting the results for better readability
     const formatData = (data: any) => {
@@ -646,6 +665,7 @@ export class OrderService {
     return {
       totalSales: formatData(totalSales),
       totalSpending: formatData(totalSpending),
+      totalPlatFormSales: formatData(totalPlatFormSales)
     };
   }
 
