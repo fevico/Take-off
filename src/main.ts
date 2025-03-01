@@ -10,10 +10,11 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({whitelist: true,} ));
 
   app.enableCors({
-    origin: true,
+    origin: ['https://take-off-six.vercel.app/', 'http://localhost:3000'],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
+  
 
   // app.use(new UploadMiddleware().use);
 
